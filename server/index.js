@@ -1,6 +1,8 @@
 // Trilha da Inclusão CAR - Setembro Verde 2026
 // Servidor das páginas destino dos QR Codes + API de participação anônima.
 
+require('dotenv').config();
+
 const path = require('path');
 const express = require('express');
 const QRCode = require('qrcode');

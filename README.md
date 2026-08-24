@@ -27,6 +27,9 @@ server/
   store.js           Consultas de leitura/escrita das participações
 sql/
   schema.sql          Script de criação manual das tabelas (opcional)
+scripts/
+  check-db.js          Testa a conexão com o SQL Server (npm run db:check)
+.env.example           Modelo de variáveis de ambiente (copiar para .env)
 ```
 
 A rota `GET /cartazes` gera automaticamente os 6 pôsteres para impressão,
@@ -35,26 +38,48 @@ já com o QR Code apontando para a URL pública de cada estação.
 ## Como rodar
 
 Pré-requisitos: Node.js 18+ e acesso de rede a uma instância do **SQL Server**
-(local, na rede da CAR, ou Azure SQL).
+(local, na rede da CAR, ou Azure SQL). Como o banco costuma estar só na rede
+interna, este roteiro é pensado para a própria TI rodar, sem precisar
+compartilhar credenciais com mais ninguém.
 
-```bash
-npm install
-PORT=3000 \
-ADMIN_KEY="defina-uma-chave-forte" \
-DB_SERVER="nome-ou-ip-do-servidor" \
-DB_DATABASE="SetembroVerde" \
-DB_USER="usuario_app" \
-DB_PASSWORD="senha_do_usuario" \
-npm start
-```
+1. Copie o arquivo de exemplo e preencha com os dados reais do banco:
+   ```bash
+   cp .env.example .env
+   ```
+   Edite `.env` e defina pelo menos `DB_SERVER`, `DB_DATABASE`, `DB_USER`,
+   `DB_PASSWORD` e `ADMIN_KEY`. Esse arquivo **nunca** é commitado (já está
+   no `.gitignore`).
 
-Acesse `http://localhost:3000`.
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
 
-Na primeira execução, a aplicação cria automaticamente as 4 tabelas de que
-precisa (ver `sql/schema.sql`), caso ainda não existam. Se preferir que a TI
-crie as tabelas manualmente (por exemplo, para usar um login de aplicação
-sem permissão de DDL), rode `sql/schema.sql` uma vez e suba a aplicação com
-`DB_AUTO_MIGRATE=false`.
+3. Valide a conexão com o banco antes de subir o site (não sobe servidor
+   HTTP, só testa a conexão e, se `DB_AUTO_MIGRATE` não estiver como
+   `false`, já cria as 4 tabelas):
+   ```bash
+   npm run db:check
+   ```
+   Uma falha aqui aponta exatamente o que corrigir (rede/firewall, nome do
+   servidor, banco, usuário/senha ou permissões) sem precisar envolver
+   quem preparou a aplicação.
+
+4. Suba a aplicação:
+   ```bash
+   npm start
+   ```
+   Acesse `http://localhost:3000` (ou a `PORT` configurada).
+
+5. Teste rapidamente cada estação pelo celular ou pelo navegador — em
+   especial as que gravam dados (03, 04, 05 e 06) — e confira em seguida
+   no painel `/admin` (com a `ADMIN_KEY` definida) se as respostas
+   apareceram.
+
+Se preferir que as tabelas sejam criadas manualmente por um DBA (por
+exemplo, para rodar a aplicação depois com um login sem permissão de DDL),
+rode `sql/schema.sql` uma vez com um usuário com permissão de criação de
+tabelas e suba a aplicação com `DB_AUTO_MIGRATE=false`.
 
 ### Variáveis de ambiente
 
