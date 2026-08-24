@@ -48,10 +48,13 @@
     ];
 
     var grid = document.getElementById('grid');
-    var origin = window.location.origin;
+    // Calcula a URL de cada estação relativa a esta própria página (e não à
+    // raiz do domínio), assim funciona tanto se o site estiver na raiz
+    // quanto se estiver publicado num subcaminho (ex.: /SetembroVerde/).
+    var basePath = window.location.href.replace(/[^/]*$/, '');
 
     ESTACOES.forEach(function (estacao) {
-      var url = origin + '/' + estacao.arquivo;
+      var url = basePath + estacao.arquivo;
 
       var qr = qrcode(0, 'M');
       qr.addData(url);
