@@ -39,70 +39,92 @@ function cleanText(value, maxLen) {
 // --- API pública das estações ---
 
 // Estação 03 — "E se fosse com você?"
-app.post('/api/respostas', (req, res) => {
-  if (rateLimited(req)) return res.status(429).json({ erro: 'Muitos envios. Tente novamente em instantes.' });
-  const texto = cleanText(req.body?.texto, 500);
-  if (!texto) return res.status(400).json({ erro: 'Escreva sua resposta antes de enviar.' });
-  store.append('respostas', { texto });
-  res.status(201).json({ ok: true });
+app.post('/api/respostas', async (req, res, next) => {
+  try {
+    if (rateLimited(req)) return res.status(429).json({ erro: 'Muitos envios. Tente novamente em instantes.' });
+    const texto = cleanText(req.body?.texto, 500);
+    if (!texto) return res.status(400).json({ erro: 'Escreva sua resposta antes de enviar.' });
+    await store.append('respostas', { texto });
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Estação 04 — "Meu Compromisso"
-app.post('/api/compromissos', (req, res) => {
-  if (rateLimited(req)) return res.status(429).json({ erro: 'Muitos envios. Tente novamente em instantes.' });
-  const itensPermitidos = [
-    'Respeito a autonomia das pessoas.',
-    'Pergunto antes de ajudar.',
-    'Não reproduzo preconceitos.',
-    'Respeito as diferenças.',
-    'Evito atitudes capacitistas.',
-    'Procuro perceber e eliminar barreiras.',
-    'Trato todos com respeito e dignidade.',
-    'Procuro aprender mais sobre inclusão.',
-  ];
-  const itensRecebidos = Array.isArray(req.body?.itens) ? req.body.itens : [];
-  const itens = itensRecebidos.filter((i) => itensPermitidos.includes(i));
-  const compromisso = cleanText(req.body?.compromisso, 300);
-  if (itens.length === 0 && !compromisso) {
-    return res.status(400).json({ erro: 'Selecione ao menos uma atitude ou escreva seu compromisso.' });
+app.post('/api/compromissos', async (req, res, next) => {
+  try {
+    if (rateLimited(req)) return res.status(429).json({ erro: 'Muitos envios. Tente novamente em instantes.' });
+    const itensPermitidos = [
+      'Respeito a autonomia das pessoas.',
+      'Pergunto antes de ajudar.',
+      'Não reproduzo preconceitos.',
+      'Respeito as diferenças.',
+      'Evito atitudes capacitistas.',
+      'Procuro perceber e eliminar barreiras.',
+      'Trato todos com respeito e dignidade.',
+      'Procuro aprender mais sobre inclusão.',
+    ];
+    const itensRecebidos = Array.isArray(req.body?.itens) ? req.body.itens : [];
+    const itens = itensRecebidos.filter((i) => itensPermitidos.includes(i));
+    const compromisso = cleanText(req.body?.compromisso, 300);
+    if (itens.length === 0 && !compromisso) {
+      return res.status(400).json({ erro: 'Selecione ao menos uma atitude ou escreva seu compromisso.' });
+    }
+    await store.append('compromissos', { itens, compromisso });
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    next(err);
   }
-  store.append('compromissos', { itens, compromisso });
-  res.status(201).json({ ok: true });
 });
 
 // Estação 05 — "Minha Folha na Árvore"
-app.post('/api/folhas', (req, res) => {
-  if (rateLimited(req)) return res.status(429).json({ erro: 'Muitos envios. Tente novamente em instantes.' });
-  const texto = cleanText(req.body?.texto, 120);
-  if (!texto) return res.status(400).json({ erro: 'Complete a frase antes de enviar.' });
-  store.append('folhas', { texto });
-  res.status(201).json({ ok: true });
+app.post('/api/folhas', async (req, res, next) => {
+  try {
+    if (rateLimited(req)) return res.status(429).json({ erro: 'Muitos envios. Tente novamente em instantes.' });
+    const texto = cleanText(req.body?.texto, 120);
+    if (!texto) return res.status(400).json({ erro: 'Complete a frase antes de enviar.' });
+    await store.append('folhas', { texto });
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Estação 06 — "Quiz da Inclusão"
-app.post('/api/quiz', (req, res) => {
-  if (rateLimited(req)) return res.status(429).json({ erro: 'Muitos envios. Tente novamente em instantes.' });
-  const acertos = Number.isInteger(req.body?.acertos) ? req.body.acertos : -1;
-  const total = Number.isInteger(req.body?.total) ? req.body.total : -1;
-  if (acertos < 0 || total !== 5 || acertos > total) {
-    return res.status(400).json({ erro: 'Resultado de quiz inválido.' });
+app.post('/api/quiz', async (req, res, next) => {
+  try {
+    if (rateLimited(req)) return res.status(429).json({ erro: 'Muitos envios. Tente novamente em instantes.' });
+    const acertos = Number.isInteger(req.body?.acertos) ? req.body.acertos : -1;
+    const total = Number.isInteger(req.body?.total) ? req.body.total : -1;
+    if (acertos < 0 || total !== 5 || acertos > total) {
+      return res.status(400).json({ erro: 'Resultado de quiz inválido.' });
+    }
+    await store.append('quiz', { acertos, total });
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    next(err);
   }
-  store.append('quiz', { acertos, total });
-  res.status(201).json({ ok: true });
 });
 
 // Números públicos da campanha (painel de encerramento)
-app.get('/api/stats', (_req, res) => {
-  const respostas = store.count('respostas');
-  const folhas = store.count('folhas');
-  const compromissos = store.count('compromissos');
-  const quiz = store.count('quiz');
-  res.json({
-    mensagensRecebidas: respostas + folhas,
-    compromissosRegistrados: compromissos,
-    respostasNoQuiz: quiz,
-    participacoesTotais: respostas + folhas + compromissos + quiz,
-  });
+app.get('/api/stats', async (_req, res, next) => {
+  try {
+    const [respostas, folhas, compromissos, quiz] = await Promise.all([
+      store.count('respostas'),
+      store.count('folhas'),
+      store.count('compromissos'),
+      store.count('quiz'),
+    ]);
+    res.json({
+      mensagensRecebidas: respostas + folhas,
+      compromissosRegistrados: compromissos,
+      respostasNoQuiz: quiz,
+      participacoesTotais: respostas + folhas + compromissos + quiz,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // --- Cartazes com QR Code (impressão) ---
@@ -184,45 +206,65 @@ function renderCartazesPage(cartoes) {
 }
 
 // --- Painel do RH (protegido por chave simples) ---
-app.get('/api/admin/data', (req, res) => {
-  if (!ADMIN_KEY || req.query.key !== ADMIN_KEY) {
-    return res.status(401).json({ erro: 'Acesso não autorizado.' });
+app.get('/api/admin/data', async (req, res, next) => {
+  try {
+    if (!ADMIN_KEY || req.query.key !== ADMIN_KEY) {
+      return res.status(401).json({ erro: 'Acesso não autorizado.' });
+    }
+    const [respostasRaw, folhasRaw, compromissos, quizEntries] = await Promise.all([
+      store.readAll('respostas'),
+      store.readAll('folhas'),
+      store.readAll('compromissos'),
+      store.readAll('quiz'),
+    ]);
+    const respostas = respostasRaw.map((r) => ({ texto: r.texto, criadoEm: r.criadoEm }));
+    const folhas = folhasRaw.map((f) => ({ texto: f.texto, criadoEm: f.criadoEm }));
+
+    const frequenciaCompromissos = {};
+    compromissos.forEach((c) => (c.itens || []).forEach((i) => {
+      frequenciaCompromissos[i] = (frequenciaCompromissos[i] || 0) + 1;
+    }));
+
+    const mediaQuiz = quizEntries.length
+      ? (quizEntries.reduce((acc, q) => acc + q.acertos, 0) / quizEntries.length).toFixed(2)
+      : null;
+
+    res.json({
+      totais: {
+        mensagensRecebidas: respostas.length + folhas.length,
+        compromissosRegistrados: compromissos.length,
+        respostasNoQuiz: quizEntries.length,
+        mediaAcertosQuiz: mediaQuiz,
+      },
+      respostas,
+      folhas,
+      frequenciaCompromissos,
+    });
+  } catch (err) {
+    next(err);
   }
-  const respostas = store.readAll('respostas').map((r) => ({ texto: r.texto, criadoEm: r.criadoEm }));
-  const folhas = store.readAll('folhas').map((f) => ({ texto: f.texto, criadoEm: f.criadoEm }));
-  const compromissos = store.readAll('compromissos');
-  const quizEntries = store.readAll('quiz');
-
-  const frequenciaCompromissos = {};
-  compromissos.forEach((c) => (c.itens || []).forEach((i) => {
-    frequenciaCompromissos[i] = (frequenciaCompromissos[i] || 0) + 1;
-  }));
-
-  const mediaQuiz = quizEntries.length
-    ? (quizEntries.reduce((acc, q) => acc + q.acertos, 0) / quizEntries.length).toFixed(2)
-    : null;
-
-  res.json({
-    totais: {
-      mensagensRecebidas: respostas.length + folhas.length,
-      compromissosRegistrados: compromissos.length,
-      respostasNoQuiz: quizEntries.length,
-      mediaAcertosQuiz: mediaQuiz,
-    },
-    respostas,
-    folhas,
-    frequenciaCompromissos,
-  });
 });
 
 app.use((err, _req, res, _next) => {
   console.error(err);
-  res.status(500).json({ erro: 'Erro interno do servidor.' });
+  res.status(500).json({ erro: 'Erro interno do servidor. Verifique a conexão com o SQL Server.' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Trilha da Inclusão CAR rodando em http://localhost:${PORT}`);
-  if (!ADMIN_KEY) {
-    console.warn('Aviso: ADMIN_KEY não definida — o painel do RH (/admin) ficará inacessível até configurá-la.');
+async function start() {
+  try {
+    await store.ensureSchema();
+    console.log('Conexão com o SQL Server estabelecida e tabelas verificadas.');
+  } catch (err) {
+    console.error('Aviso: não foi possível preparar o banco de dados no início. As páginas estáticas continuam disponíveis, mas os formulários falharão até a conexão ser corrigida.');
+    console.error(err.message);
   }
-});
+
+  app.listen(PORT, () => {
+    console.log(`Trilha da Inclusão CAR rodando em http://localhost:${PORT}`);
+    if (!ADMIN_KEY) {
+      console.warn('Aviso: ADMIN_KEY não definida — o painel do RH (/admin) ficará inacessível até configurá-la.');
+    }
+  });
+}
+
+start();
