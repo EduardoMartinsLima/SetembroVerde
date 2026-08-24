@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <title>E se fosse com você? — Trilha da Inclusão CAR</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <header class="topo">
@@ -48,7 +48,7 @@
     </div>
 
     <p style="text-align:center; margin-top:1.5rem;">
-      <a class="botao secundario" href="/">Ver todas as estações</a>
+      <a class="botao secundario" href="index.html">Ver todas as estações</a>
     </p>
 
     <footer class="rodape">
@@ -56,7 +56,7 @@
     </footer>
   </main>
 
-  <script src="/js/main.js"></script>
+  <script src="js/main.js"></script>
   <script>
     const form = document.getElementById('form-resposta');
     const msg = document.getElementById('msg');
@@ -66,7 +66,7 @@
       if (!texto) return;
       const botao = form.querySelector('button[type="submit"]');
       botao.disabled = true;
-      enviarParticipacao('/api/respostas.ashx', { texto }, {
+      enviarParticipacao('api/respostas.ashx', { texto }, {
         onSucesso: () => {
           msg.textContent = 'Obrigado! Sua resposta foi enviada de forma anônima.';
           msg.className = 'mensagem-envio sucesso';

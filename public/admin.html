@@ -5,7 +5,7 @@
 <title>Painel RH — Trilha da Inclusão CAR</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="css/style.css" />
 <style>
   .container { max-width: 860px; }
   table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
@@ -66,7 +66,7 @@
     const erroLogin = document.getElementById('erro-login');
 
     async function carregar(chave) {
-      const resp = await fetch(`/api/admin-data.ashx?key=${encodeURIComponent(chave)}`);
+      const resp = await fetch(`api/admin-data.ashx?key=${encodeURIComponent(chave)}`);
       if (!resp.ok) {
         const dados = await resp.json().catch(() => ({}));
         throw new Error(dados.erro || 'Acesso não autorizado.');

@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <title>Quiz da Inclusão — Trilha da Inclusão CAR</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <header class="topo">
@@ -73,7 +73,7 @@
     </div>
 
     <p style="text-align:center; margin-top:1.5rem;">
-      <a class="botao secundario" href="/">Ver todas as estações</a>
+      <a class="botao secundario" href="index.html">Ver todas as estações</a>
     </p>
 
     <footer class="rodape">
@@ -81,7 +81,7 @@
     </footer>
   </main>
 
-  <script src="/js/main.js"></script>
+  <script src="js/main.js"></script>
   <script>
     const respostasCertas = { q1: '1', q2: '1', q3: '2', q4: '2', q5: '1' };
     const form = document.getElementById('form-quiz');
@@ -104,7 +104,7 @@
       });
 
       mostrarResultado(acertos, perguntas.length);
-      enviarParticipacao('/api/quiz.ashx', { acertos, total: perguntas.length });
+      enviarParticipacao('api/quiz.ashx', { acertos, total: perguntas.length });
     });
 
     function mostrarResultado(acertos, total) {
