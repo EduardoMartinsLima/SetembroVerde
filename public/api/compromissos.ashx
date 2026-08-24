@@ -1,6 +1,7 @@
 <%@ WebHandler Language="C#" Class="CompromissosHandler" %>
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -35,12 +36,25 @@ public class CompromissosHandler : IHttpHandler
         {
             var data = Helpers.ReadJsonBody(context);
 
+            // JavaScriptSerializer desserializa um array JSON como ArrayList
+            // (não como object[]), então o cast precisa passar por IEnumerable.
             object itensRaw;
-            var itensRecebidos = data.TryGetValue("itens", out itensRaw) ? itensRaw as object[] : null;
-            var itens = (itensRecebidos ?? new object[0])
-                .Select(i => i as string)
-                .Where(i => !string.IsNullOrEmpty(i) && ItensPermitidos.Contains(i))
-                .ToList();
+            var itens = new List<string>();
+            if (data.TryGetValue("itens", out itensRaw))
+            {
+                var itensEnumerable = itensRaw as IEnumerable;
+                if (itensEnumerable != null)
+                {
+                    foreach (var item in itensEnumerable)
+                    {
+                        var texto = item as string;
+                        if (!string.IsNullOrEmpty(texto) && ItensPermitidos.Contains(texto))
+                        {
+                            itens.Add(texto);
+                        }
+                    }
+                }
+            }
 
             var compromisso = Helpers.CleanText(Helpers.GetString(data, "compromisso"), 300);
 

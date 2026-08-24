@@ -41,6 +41,11 @@
         <p id="msg" class="mensagem-envio" role="status" aria-live="polite"></p>
       </form>
 
+      <div id="confirmacao" class="destaque oculto" style="margin-top:1rem;">
+        <p><strong>✓ Obrigado! Sua resposta foi enviada de forma anônima.</strong></p>
+        <button type="button" id="btn-responder-novamente" class="botao secundario">Responder novamente</button>
+      </div>
+
       <p class="lead" style="font-size:.85rem; margin-top:1rem;">
         As respostas poderão ser analisadas pelo RH e algumas utilizadas na
         comunicação de encerramento — sempre de forma anônima.
@@ -60,6 +65,12 @@
   <script>
     const form = document.getElementById('form-resposta');
     const msg = document.getElementById('msg');
+    const { mostrarConfirmacao } = configurarConfirmacao({
+      formId: 'form-resposta',
+      confirmacaoId: 'confirmacao',
+      botaoNovamenteId: 'btn-responder-novamente',
+    });
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const texto = document.getElementById('texto').value.trim();
@@ -68,10 +79,9 @@
       botao.disabled = true;
       enviarParticipacao('api/respostas.ashx', { texto }, {
         onSucesso: () => {
-          msg.textContent = 'Obrigado! Sua resposta foi enviada de forma anônima.';
-          msg.className = 'mensagem-envio sucesso';
-          form.reset();
+          msg.textContent = '';
           botao.disabled = false;
+          mostrarConfirmacao();
         },
         onErro: (erro) => {
           msg.textContent = erro;

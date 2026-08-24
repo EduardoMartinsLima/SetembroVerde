@@ -16,6 +16,31 @@ async function enviarParticipacao(endpoint, payload, { onSucesso, onErro } = {})
   }
 }
 
+// Alterna entre o formulário e um estado de confirmação com um botão
+// discreto para responder de novo. Usado pelas estações que coletam dados.
+function configurarConfirmacao({ formId, confirmacaoId, botaoNovamenteId }) {
+  const form = document.getElementById(formId);
+  const confirmacao = document.getElementById(confirmacaoId);
+  const botaoNovamente = document.getElementById(botaoNovamenteId);
+
+  function mostrarConfirmacao() {
+    form.classList.add('oculto');
+    confirmacao.classList.remove('oculto');
+    confirmacao.setAttribute('tabindex', '-1');
+    confirmacao.focus();
+  }
+
+  function mostrarFormulario() {
+    confirmacao.classList.add('oculto');
+    form.classList.remove('oculto');
+    form.reset();
+  }
+
+  botaoNovamente.addEventListener('click', mostrarFormulario);
+
+  return { mostrarConfirmacao, mostrarFormulario };
+}
+
 function configurarCompartilhar(botaoId) {
   const botao = document.getElementById(botaoId);
   if (!botao) return;

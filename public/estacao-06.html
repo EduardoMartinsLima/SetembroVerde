@@ -69,6 +69,7 @@
       <h2 id="resultado-titulo"></h2>
       <p id="resultado-texto" class="lead"></p>
       <p id="resultado-pontuacao" class="destaque"></p>
+      <p id="status-envio" class="mensagem-envio" role="status" aria-live="polite"></p>
       <button type="button" id="btn-refazer" class="botao secundario">Refazer o quiz</button>
     </div>
 
@@ -104,7 +105,20 @@
       });
 
       mostrarResultado(acertos, perguntas.length);
-      enviarParticipacao('api/quiz.ashx', { acertos, total: perguntas.length });
+
+      const statusEnvio = document.getElementById('status-envio');
+      statusEnvio.textContent = 'Registrando sua pontuação…';
+      statusEnvio.className = 'mensagem-envio';
+      enviarParticipacao('api/quiz.ashx', { acertos, total: perguntas.length }, {
+        onSucesso: () => {
+          statusEnvio.textContent = '✓ Sua pontuação foi registrada de forma anônima.';
+          statusEnvio.className = 'mensagem-envio sucesso';
+        },
+        onErro: () => {
+          statusEnvio.textContent = 'Não foi possível registrar sua pontuação, mas seu resultado acima continua válido.';
+          statusEnvio.className = 'mensagem-envio erro';
+        },
+      });
     });
 
     function mostrarResultado(acertos, total) {
@@ -131,6 +145,7 @@
 
     document.getElementById('btn-refazer').addEventListener('click', () => {
       form.reset();
+      document.getElementById('status-envio').textContent = '';
       document.getElementById('resultado-card').classList.add('oculto');
       document.getElementById('quiz-card').classList.remove('oculto');
     });

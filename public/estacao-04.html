@@ -65,6 +65,11 @@
         <p id="msg" class="mensagem-envio" role="status" aria-live="polite"></p>
       </form>
 
+      <div id="confirmacao" class="destaque oculto" style="margin-top:1rem;">
+        <p><strong>✓ Compromisso registrado. Obrigado por fazer parte!</strong></p>
+        <button type="button" id="btn-responder-novamente" class="botao secundario">Responder novamente</button>
+      </div>
+
       <p class="lead" style="margin-top:1.5rem;">
         <strong>Sua atitude faz diferença.</strong><br>
         "Inclusão: quando todos fazem parte, todos transformam."
@@ -84,6 +89,12 @@
   <script>
     const form = document.getElementById('form-compromisso');
     const msg = document.getElementById('msg');
+    const { mostrarConfirmacao } = configurarConfirmacao({
+      formId: 'form-compromisso',
+      confirmacaoId: 'confirmacao',
+      botaoNovamenteId: 'btn-responder-novamente',
+    });
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const itens = Array.from(form.querySelectorAll('input[name="itens"]:checked')).map((i) => i.value);
@@ -97,10 +108,9 @@
       botao.disabled = true;
       enviarParticipacao('api/compromissos.ashx', { itens, compromisso }, {
         onSucesso: () => {
-          msg.textContent = 'Compromisso registrado. Obrigado por fazer parte!';
-          msg.className = 'mensagem-envio sucesso';
-          form.reset();
+          msg.textContent = '';
           botao.disabled = false;
+          mostrarConfirmacao();
         },
         onErro: (erro) => {
           msg.textContent = erro;
