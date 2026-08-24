@@ -95,7 +95,7 @@
       }
       const botao = form.querySelector('button[type="submit"]');
       botao.disabled = true;
-      enviarParticipacao('/api/compromissos', { itens, compromisso }, {
+      enviarParticipacao('/api/compromissos.ashx', { itens, compromisso }, {
         onSucesso: () => {
           msg.textContent = 'Compromisso registrado. Obrigado por fazer parte!';
           msg.className = 'mensagem-envio sucesso';

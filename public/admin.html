@@ -66,7 +66,7 @@
     const erroLogin = document.getElementById('erro-login');
 
     async function carregar(chave) {
-      const resp = await fetch(`/api/admin/data?key=${encodeURIComponent(chave)}`);
+      const resp = await fetch(`/api/admin-data.ashx?key=${encodeURIComponent(chave)}`);
       if (!resp.ok) {
         const dados = await resp.json().catch(() => ({}));
         throw new Error(dados.erro || 'Acesso não autorizado.');

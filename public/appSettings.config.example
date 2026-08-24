@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copie este arquivo para "appSettings.config" (mesma pasta) e preencha.
+  NUNCA versione o arquivo "appSettings.config" (já está no .gitignore).
+-->
+<appSettings>
+  <add key="AdminKey" value="defina-uma-chave-forte" />
+</appSettings>

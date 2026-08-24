@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copie este arquivo para "connectionStrings.config" (mesma pasta) e
+  preencha com os dados reais do SQL Server. NUNCA versione o arquivo
+  "connectionStrings.config" (já está no .gitignore).
+
+  Ajustes comuns:
+  - Instância nomeada: Server=NOME-DO-SERVIDOR\SQLEXPRESS
+  - Porta customizada: Server=NOME-DO-SERVIDOR,1433
+  - Certificado autoassinado (comum em SQL Server on-premises):
+    mantenha TrustServerCertificate=True. Se tiver um certificado válido
+    emitido por uma CA confiável, troque para False.
+-->
+<connectionStrings>
+  <add name="SetembroVerde"
+       connectionString="Server=nome-ou-ip-do-servidor;Database=SetembroVerde;User Id=usuario_app;Password=senha_do_usuario;Encrypt=True;TrustServerCertificate=True;Connection Timeout=15;"
+       providerName="System.Data.SqlClient" />
+</connectionStrings>

@@ -57,7 +57,7 @@
       if (!texto) return;
       const botao = form.querySelector('button[type="submit"]');
       botao.disabled = true;
-      enviarParticipacao('/api/folhas', { texto }, {
+      enviarParticipacao('/api/folhas.ashx', { texto }, {
         onSucesso: () => {
           msg.textContent = 'Sua folha foi plantada na Árvore da Inclusão. Obrigado!';
           msg.className = 'mensagem-envio sucesso';

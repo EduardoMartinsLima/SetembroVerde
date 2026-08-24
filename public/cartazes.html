@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Cartazes — Trilha da Inclusão CAR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<style>
+  :root { --verde-escuro: #14532d; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #1a1a1a; }
+  .toolbar { max-width: 900px; margin: 1rem auto; padding: 0 1rem; display: flex; gap: .75rem; }
+  .toolbar button, .toolbar a {
+    font: inherit; font-weight: 700; padding: .6rem 1.2rem; border-radius: 999px;
+    border: 2px solid var(--verde-escuro); background: var(--verde-escuro); color: #fff; cursor: pointer; text-decoration: none;
+  }
+  .toolbar a { background: transparent; color: var(--verde-escuro); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; max-width: 1100px; margin: 0 auto; padding: 0 1rem 3rem; }
+  .cartaz { border: 2px solid var(--verde-escuro); border-radius: 16px; padding: 1.5rem; text-align: center; break-inside: avoid; page-break-inside: avoid; }
+  .cartaz-numero { font-weight: 700; color: var(--verde-escuro); letter-spacing: .05em; }
+  .cartaz h2 { margin: .25rem 0 1rem; }
+  .cartaz-qr { display: flex; justify-content: center; }
+  .cartaz-qr img { width: 100%; max-width: 240px; height: auto; }
+  .cartaz-url { font-size: .75rem; color: #555; word-break: break-all; margin-top: .75rem; }
+  @media print {
+    .toolbar { display: none; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .cartaz { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" onclick="window.print()">Imprimir cartazes</button>
+    <a href="/">Voltar</a>
+  </div>
+  <div class="grid" id="grid"></div>
+
+  <script src="/js/qrcode.js"></script>
+  <script>
+    var ESTACOES = [
+      { numero: '01', titulo: 'Você Sabia?', arquivo: 'estacao-01.html' },
+      { numero: '02', titulo: 'Mito ou Verdade?', arquivo: 'estacao-02.html' },
+      { numero: '03', titulo: 'E se fosse com você?', arquivo: 'estacao-03.html' },
+      { numero: '04', titulo: 'Meu Compromisso', arquivo: 'estacao-04.html' },
+      { numero: '05', titulo: 'Minha Folha na Árvore', arquivo: 'estacao-05.html' },
+      { numero: '06', titulo: 'Quiz da Inclusão', arquivo: 'estacao-06.html' }
+    ];
+
+    var grid = document.getElementById('grid');
+    var origin = window.location.origin;
+
+    ESTACOES.forEach(function (estacao) {
+      var url = origin + '/' + estacao.arquivo;
+
+      var qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+
+      var section = document.createElement('section');
+      section.className = 'cartaz';
+      section.innerHTML =
+        '<div class="cartaz-numero">QR Code ' + estacao.numero + '</div>' +
+        '<h2>' + estacao.titulo + '</h2>' +
+        '<div class="cartaz-qr"></div>' +
+        '<p class="cartaz-url"></p>';
+
+      section.querySelector('.cartaz-qr').innerHTML = qr.createImgTag(6, 8);
+      section.querySelector('.cartaz-qr img').alt = 'QR Code para a estação ' + estacao.numero + ' — ' + estacao.titulo;
+      section.querySelector('.cartaz-url').textContent = url;
+
+      grid.appendChild(section);
+    });
+  </script>
+</body>
+</html>

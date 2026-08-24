@@ -104,7 +104,7 @@
       });
 
       mostrarResultado(acertos, perguntas.length);
-      enviarParticipacao('/api/quiz', { acertos, total: perguntas.length });
+      enviarParticipacao('/api/quiz.ashx', { acertos, total: perguntas.length });
     });
 
     function mostrarResultado(acertos, total) {

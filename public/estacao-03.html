@@ -66,7 +66,7 @@
       if (!texto) return;
       const botao = form.querySelector('button[type="submit"]');
       botao.disabled = true;
-      enviarParticipacao('/api/respostas', { texto }, {
+      enviarParticipacao('/api/respostas.ashx', { texto }, {
         onSucesso: () => {
           msg.textContent = 'Obrigado! Sua resposta foi enviada de forma anônima.';
           msg.className = 'mensagem-envio sucesso';

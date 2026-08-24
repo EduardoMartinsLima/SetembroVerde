@@ -1,3 +1,9 @@
 node_modules/
 .env
 *.log
+
+# ASP.NET / IIS (deploy alternativo em Windows Server antigo — ver README)
+public/connectionStrings.config
+public/appSettings.config
+public/bin/
+public/obj/
