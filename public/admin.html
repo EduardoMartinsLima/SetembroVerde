@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Painel RH — Trilha da Inclusão CAR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+  .container { max-width: 860px; }
+  table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--borda); font-size: .95rem; }
+  .numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 1rem; }
+  .numero-item { background: var(--verde-claro); border-radius: 12px; padding: 1rem; text-align: center; }
+  .numero-item .valor { font-size: 1.8rem; font-weight: 800; color: var(--verde-escuro); }
+  .numero-item .rotulo { font-size: .85rem; color: var(--texto-suave); }
+</style>
+</head>
+<body>
+  <header class="topo">
+    <span class="selo">Uso interno · RH/ASCOM</span>
+    <h1>Painel — Trilha da Inclusão CAR</h1>
+  </header>
+
+  <main class="container">
+    <div class="card" id="login-card">
+      <h2>Acesso restrito</h2>
+      <p class="lead">Informe a chave de acesso fornecida pela TI para visualizar os resultados agregados e anônimos.</p>
+      <label for="chave" class="sr-only">Chave de acesso</label>
+      <input type="text" id="chave" placeholder="Chave de acesso">
+      <div style="margin-top:1rem;"><button id="btn-entrar" type="button">Entrar</button></div>
+      <p id="erro-login" class="mensagem-envio erro"></p>
+    </div>
+
+    <div id="painel" class="oculto">
+      <div class="card">
+        <h2>Números da campanha</h2>
+        <div class="numeros">
+          <div class="numero-item"><div class="valor" id="v-mensagens">0</div><div class="rotulo">Mensagens recebidas</div></div>
+          <div class="numero-item"><div class="valor" id="v-compromissos">0</div><div class="rotulo">Compromissos registrados</div></div>
+          <div class="numero-item"><div class="valor" id="v-quiz">0</div><div class="rotulo">Respostas no Quiz</div></div>
+          <div class="numero-item"><div class="valor" id="v-media">–</div><div class="rotulo">Média de acertos no Quiz</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Atitudes mais escolhidas (Estação 04)</h2>
+        <table id="tabela-compromissos"><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h2>Respostas — "Eu posso contribuir para a inclusão quando…" (Estação 03)</h2>
+        <table><tbody id="lista-respostas"></tbody></table>
+      </div>
+
+      <div class="card">
+        <h2>Folhas da Árvore da Inclusão — "Para mim, inclusão é…" (Estação 05)</h2>
+        <table><tbody id="lista-folhas"></tbody></table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const loginCard = document.getElementById('login-card');
+    const painel = document.getElementById('painel');
+    const erroLogin = document.getElementById('erro-login');
+
+    async function carregar(chave) {
+      const resp = await fetch(`/api/admin/data?key=${encodeURIComponent(chave)}`);
+      if (!resp.ok) {
+        const dados = await resp.json().catch(() => ({}));
+        throw new Error(dados.erro || 'Acesso não autorizado.');
+      }
+      return resp.json();
+    }
+
+    function render(dados) {
+      document.getElementById('v-mensagens').textContent = dados.totais.mensagensRecebidas;
+      document.getElementById('v-compromissos').textContent = dados.totais.compromissosRegistrados;
+      document.getElementById('v-quiz').textContent = dados.totais.respostasNoQuiz;
+      document.getElementById('v-media').textContent = dados.totais.mediaAcertosQuiz ?? '–';
+
+      const corpoCompromissos = document.querySelector('#tabela-compromissos tbody');
+      corpoCompromissos.innerHTML = '';
+      Object.entries(dados.frequenciaCompromissos)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([atitude, qtd]) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${atitude}</td><td>${qtd}</td>`;
+          corpoCompromissos.appendChild(tr);
+        });
+
+      const listaRespostas = document.getElementById('lista-respostas');
+      listaRespostas.innerHTML = '';
+      dados.respostas.forEach((r) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${escapeHtml(r.texto)}</td>`;
+        listaRespostas.appendChild(tr);
+      });
+
+      const listaFolhas = document.getElementById('lista-folhas');
+      listaFolhas.innerHTML = '';
+      dados.folhas.forEach((f) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${escapeHtml(f.texto)}</td>`;
+        listaFolhas.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    document.getElementById('btn-entrar').addEventListener('click', async () => {
+      const chave = document.getElementById('chave').value.trim();
+      if (!chave) return;
+      try {
+        const dados = await carregar(chave);
+        sessionStorage.setItem('trilha-admin-key', chave);
+        loginCard.classList.add('oculto');
+        painel.classList.remove('oculto');
+        render(dados);
+      } catch (err) {
+        erroLogin.textContent = err.message;
+      }
+    });
+
+    // Tenta reaproveitar a chave já usada nesta aba, sem persistir entre dispositivos.
+    (async () => {
+      const chaveSalva = sessionStorage.getItem('trilha-admin-key');
+      if (!chaveSalva) return;
+      try {
+        const dados = await carregar(chaveSalva);
+        loginCard.classList.add('oculto');
+        painel.classList.remove('oculto');
+        render(dados);
+      } catch {
+        sessionStorage.removeItem('trilha-admin-key');
+      }
+    })();
+  </script>
+</body>
+</html>

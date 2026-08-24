@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>E se fosse com você? — Trilha da Inclusão CAR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topo">
+    <span class="selo">Estação 03 · Coloque-se no lugar</span>
+    <h1>E se fosse com você?</h1>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <span class="estacao-numero">03</span>
+      <h2>Pare por 30 segundos.</h2>
+      <p class="lead">
+        Imagine chegar ao trabalho e descobrir que você não consegue utilizar
+        determinado espaço, acessar uma informação ou realizar uma atividade
+        porque existe uma barreira que outras pessoas nem percebem.
+      </p>
+      <p class="lead"><strong>O que você sentiria?</strong></p>
+
+      <div class="destaque">
+        <p>Nem todas as barreiras são visíveis. Algumas estão nos espaços
+        físicos. Outras estão na comunicação. E algumas estão nas atitudes.</p>
+        <p><strong>Pense:</strong> que barreira você consegue ajudar a
+        eliminar no seu ambiente de trabalho?</p>
+      </div>
+
+      <form id="form-resposta">
+        <label for="texto"><strong>"Eu posso contribuir para a inclusão quando…"</strong></label>
+        <p class="lead" style="margin-top:.25rem;">Sua resposta é anônima. Não peça nem informe seu nome.</p>
+        <textarea id="texto" name="texto" rows="4" maxlength="500" required
+          placeholder="Escreva aqui sua resposta..."></textarea>
+        <div style="margin-top:1rem;">
+          <button type="submit">Enviar resposta</button>
+        </div>
+        <p id="msg" class="mensagem-envio" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="lead" style="font-size:.85rem; margin-top:1rem;">
+        As respostas poderão ser analisadas pelo RH e algumas utilizadas na
+        comunicação de encerramento — sempre de forma anônima.
+      </p>
+    </div>
+
+    <p style="text-align:center; margin-top:1.5rem;">
+      <a class="botao secundario" href="/">Ver todas as estações</a>
+    </p>
+
+    <footer class="rodape">
+      <p class="frase-tema">"Inclusão: quando todos fazem parte, todos transformam."</p>
+    </footer>
+  </main>
+
+  <script src="/js/main.js"></script>
+  <script>
+    const form = document.getElementById('form-resposta');
+    const msg = document.getElementById('msg');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const texto = document.getElementById('texto').value.trim();
+      if (!texto) return;
+      const botao = form.querySelector('button[type="submit"]');
+      botao.disabled = true;
+      enviarParticipacao('/api/respostas', { texto }, {
+        onSucesso: () => {
+          msg.textContent = 'Obrigado! Sua resposta foi enviada de forma anônima.';
+          msg.className = 'mensagem-envio sucesso';
+          form.reset();
+          botao.disabled = false;
+        },
+        onErro: (erro) => {
+          msg.textContent = erro;
+          msg.className = 'mensagem-envio erro';
+          botao.disabled = false;
+        },
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Mito ou Verdade? — Trilha da Inclusão CAR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topo">
+    <span class="selo">Estação 02 · Desafie-se</span>
+    <h1>Mito ou Verdade?</h1>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <span class="estacao-numero">02</span>
+      <h2>Você acha que sabe tudo sobre inclusão?</h2>
+      <p class="lead">Responda e depois veja a resposta de cada pergunta.</p>
+
+      <form id="form-mv">
+        <div class="pergunta" data-resposta="verdade">
+          <p class="enunciado">1. "Antes de ajudar uma pessoa com deficiência, o ideal é perguntar se ela precisa de ajuda."</p>
+          <label class="opcao"><input type="radio" name="p1" value="mito"> Mito</label>
+          <label class="opcao"><input type="radio" name="p1" value="verdade"> Verdade</label>
+          <button type="button" class="botao secundario ver-resposta" data-pergunta="p1">Ver resposta</button>
+          <div class="resultado correto" data-resultado="p1">
+            <p><strong>VERDADE!</strong></p>
+            <p>Uma atitude inclusiva respeita a autonomia da pessoa. Nem sempre aquilo que imaginamos ser uma ajuda é realmente necessário.</p>
+          </div>
+        </div>
+
+        <div class="pergunta" data-resposta="mito">
+          <p class="enunciado">2. "Falar com o acompanhante é melhor do que falar diretamente com uma pessoa com deficiência."</p>
+          <label class="opcao"><input type="radio" name="p2" value="mito"> Mito</label>
+          <label class="opcao"><input type="radio" name="p2" value="verdade"> Verdade</label>
+          <button type="button" class="botao secundario ver-resposta" data-pergunta="p2">Ver resposta</button>
+          <div class="resultado correto" data-resultado="p2">
+            <p><strong>MITO!</strong></p>
+            <p>Sempre que possível, dirija-se diretamente à pessoa. Ela deve ser a protagonista da própria comunicação.</p>
+          </div>
+        </div>
+
+        <div class="pergunta" data-resposta="mito">
+          <p class="enunciado">3. "Acessibilidade é importante somente para pessoas com deficiência."</p>
+          <label class="opcao"><input type="radio" name="p3" value="mito"> Mito</label>
+          <label class="opcao"><input type="radio" name="p3" value="verdade"> Verdade</label>
+          <button type="button" class="botao secundario ver-resposta" data-pergunta="p3">Ver resposta</button>
+          <div class="resultado correto" data-resultado="p3">
+            <p><strong>MITO!</strong></p>
+            <p>Recursos de acessibilidade podem beneficiar diferentes pessoas e tornar ambientes e serviços mais seguros, funcionais e inclusivos.</p>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <p style="text-align:center; margin-top:1.5rem;">
+      <a class="botao secundario" href="/">Ver todas as estações</a>
+    </p>
+
+    <footer class="rodape">
+      <p class="frase-tema">"Inclusão: quando todos fazem parte, todos transformam."</p>
+    </footer>
+  </main>
+
+  <script>
+    document.querySelectorAll('.ver-resposta').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pergunta;
+        document.querySelector(`[data-resultado="${id}"]`).classList.add('visivel');
+      });
+    });
+  </script>
+</body>
+</html>

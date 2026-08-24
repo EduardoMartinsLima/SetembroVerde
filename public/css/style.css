@@ -1,0 +1,244 @@
+/* Trilha da Inclusão CAR — estilo compartilhado
+   Contraste alto, tipografia grande, alvos de toque amplos: pensado para
+   ser lido rapidamente no celular, inclusive por quem usa leitor de tela
+   ou tem baixa visão. */
+
+:root {
+  --verde-escuro: #14532d;
+  --verde: #1e8f4e;
+  --verde-claro: #e6f4ea;
+  --amarelo: #f2b705;
+  --texto: #1a1a1a;
+  --texto-suave: #4a4a4a;
+  --fundo: #ffffff;
+  --borda: #cfe3d6;
+  --erro: #b3261e;
+  --raio: 16px;
+  --fonte: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--fonte);
+  color: var(--texto);
+  background: var(--verde-claro);
+  line-height: 1.5;
+  font-size: 18px;
+}
+
+a { color: var(--verde-escuro); }
+
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.topo {
+  background: var(--verde-escuro);
+  color: #fff;
+  padding: 1.25rem 1.25rem;
+  text-align: center;
+}
+
+.topo .selo {
+  display: inline-block;
+  font-size: .8rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,.15);
+  border-radius: 999px;
+  padding: .25rem .75rem;
+  margin-bottom: .5rem;
+}
+
+.topo h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.estacao-numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: var(--amarelo);
+  color: var(--verde-escuro);
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin-bottom: .75rem;
+}
+
+.card {
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  padding: 1.5rem;
+  margin-top: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+h2 { font-size: 1.5rem; margin-top: 0; color: var(--verde-escuro); }
+h3 { color: var(--verde-escuro); }
+
+.lead {
+  font-size: 1.05rem;
+  color: var(--texto-suave);
+}
+
+.lista-atitudes { padding-left: 1.25rem; }
+.lista-atitudes li { margin-bottom: .5rem; }
+
+.destaque {
+  background: var(--verde-claro);
+  border-left: 4px solid var(--verde);
+  padding: 1rem 1.1rem;
+  border-radius: 0 12px 12px 0;
+  margin: 1.25rem 0;
+}
+
+.botao, button, input[type="submit"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  background: var(--verde);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: .9rem 1.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  min-height: 48px;
+  width: 100%;
+}
+
+.botao:hover, button:hover { background: var(--verde-escuro); }
+.botao:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, label:focus-within {
+  outline: 3px solid var(--amarelo);
+  outline-offset: 2px;
+}
+
+.botao.secundario {
+  background: transparent;
+  color: var(--verde-escuro);
+  border: 2px solid var(--verde-escuro);
+}
+.botao.secundario:hover { background: var(--verde-claro); }
+
+textarea, input[type="text"] {
+  width: 100%;
+  font-family: inherit;
+  font-size: 1rem;
+  padding: .85rem 1rem;
+  border: 2px solid var(--borda);
+  border-radius: 12px;
+  resize: vertical;
+}
+textarea:focus, input[type="text"]:focus { border-color: var(--verde); outline: none; }
+
+.opcao {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  border: 2px solid var(--borda);
+  border-radius: 12px;
+  margin-bottom: .75rem;
+  cursor: pointer;
+}
+.opcao input { width: 1.25rem; height: 1.25rem; flex-shrink: 0; margin-top: .15rem; }
+.opcao:has(input:checked) { border-color: var(--verde); background: var(--verde-claro); }
+
+.pergunta { margin-bottom: 1.75rem; }
+.pergunta p.enunciado { font-weight: 600; font-size: 1.05rem; }
+
+.resultado {
+  display: none;
+  margin-top: .75rem;
+  padding: .85rem 1rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.resultado.correto { background: #e6f4ea; color: var(--verde-escuro); }
+.resultado.incorreto { background: #fdecea; color: var(--erro); }
+.resultado.visivel { display: block; }
+
+.mensagem-envio {
+  margin-top: .75rem;
+  font-weight: 600;
+}
+.mensagem-envio.sucesso { color: var(--verde-escuro); }
+.mensagem-envio.erro { color: var(--erro); }
+
+footer.rodape {
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: .85rem;
+  margin-top: 2.5rem;
+}
+
+.frase-tema {
+  font-style: italic;
+  text-align: center;
+  color: var(--verde-escuro);
+  font-weight: 600;
+}
+
+.grade-links {
+  display: grid;
+  gap: .85rem;
+  margin-top: 1.5rem;
+}
+
+.link-estacao {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  text-decoration: none;
+  color: var(--texto);
+}
+.link-estacao:hover { border-color: var(--verde); }
+.link-estacao .n {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: var(--verde-escuro);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.link-estacao .t { font-weight: 700; }
+.link-estacao .s { display: block; font-size: .85rem; color: var(--texto-suave); font-weight: 400; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+.progresso-quiz {
+  font-size: .9rem;
+  color: var(--texto-suave);
+  margin-bottom: .5rem;
+}
+
+.oculto { display: none !important; }

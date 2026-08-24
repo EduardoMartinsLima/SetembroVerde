@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Minha Folha na Árvore — Trilha da Inclusão CAR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topo">
+    <span class="selo">Estação 05 · Deixe sua marca</span>
+    <h1>Minha Folha na Árvore</h1>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <span class="estacao-numero">05</span>
+      <h2>A nossa árvore ainda não está completa.</h2>
+      <p class="lead">Ajude a CAR a construir a Árvore da Inclusão.</p>
+
+      <form id="form-folha">
+        <label for="texto"><strong>Complete a frase:</strong> "Para mim, inclusão é…"</label>
+        <input type="text" id="texto" name="texto" maxlength="120" required
+          placeholder="ex.: respeito, pertencimento..." style="margin-top:.5rem;">
+        <p class="lead" style="font-size:.85rem; margin-top:.5rem;">
+          Exemplos: "Respeito." · "Pertencimento." · "Ter oportunidades." ·
+          "Poder participar." · "Ser tratado com dignidade."
+        </p>
+        <div style="margin-top:1rem;">
+          <button type="submit">Enviar minha folha</button>
+        </div>
+        <p id="msg" class="mensagem-envio" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="lead" style="font-size:.85rem; margin-top:1rem;">
+        As respostas poderão ser impressas em formato de folhas e
+        acrescentadas ao painel físico — sem identificação de quem escreveu.
+      </p>
+    </div>
+
+    <p style="text-align:center; margin-top:1.5rem;">
+      <a class="botao secundario" href="/">Ver todas as estações</a>
+    </p>
+
+    <footer class="rodape">
+      <p class="frase-tema">"Inclusão: quando todos fazem parte, todos transformam."</p>
+    </footer>
+  </main>
+
+  <script src="/js/main.js"></script>
+  <script>
+    const form = document.getElementById('form-folha');
+    const msg = document.getElementById('msg');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const texto = document.getElementById('texto').value.trim();
+      if (!texto) return;
+      const botao = form.querySelector('button[type="submit"]');
+      botao.disabled = true;
+      enviarParticipacao('/api/folhas', { texto }, {
+        onSucesso: () => {
+          msg.textContent = 'Sua folha foi plantada na Árvore da Inclusão. Obrigado!';
+          msg.className = 'mensagem-envio sucesso';
+          form.reset();
+          botao.disabled = false;
+        },
+        onErro: (erro) => {
+          msg.textContent = erro;
+          msg.className = 'mensagem-envio erro';
+          botao.disabled = false;
+        },
+      });
+    });
+  </script>
+</body>
+</html>

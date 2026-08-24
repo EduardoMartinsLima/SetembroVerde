@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Meu Compromisso — Trilha da Inclusão CAR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topo">
+    <span class="selo">Estação 04 · Bateu o ponto?</span>
+    <h1>Meu Compromisso</h1>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <span class="estacao-numero">04</span>
+      <h2>Então marque também um ponto pela inclusão.</h2>
+      <p class="lead">Eu posso contribuir para um ambiente mais inclusivo quando:</p>
+
+      <form id="form-compromisso">
+        <label class="opcao">
+          <input type="checkbox" name="itens" value="Respeito a autonomia das pessoas.">
+          Respeito a autonomia das pessoas.
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="itens" value="Pergunto antes de ajudar.">
+          Pergunto antes de ajudar.
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="itens" value="Não reproduzo preconceitos.">
+          Não reproduzo preconceitos.
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="itens" value="Respeito as diferenças.">
+          Respeito as diferenças.
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="itens" value="Evito atitudes capacitistas.">
+          Evito atitudes capacitistas.
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="itens" value="Procuro perceber e eliminar barreiras.">
+          Procuro perceber e eliminar barreiras.
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="itens" value="Trato todos com respeito e dignidade.">
+          Trato todos com respeito e dignidade.
+        </label>
+        <label class="opcao">
+          <input type="checkbox" name="itens" value="Procuro aprender mais sobre inclusão.">
+          Procuro aprender mais sobre inclusão.
+        </label>
+
+        <div class="destaque" style="margin-top:1.5rem;">
+          <label for="compromisso"><strong>Escolha pelo menos uma atitude que você se compromete a praticar.</strong></label>
+          <p class="lead" style="margin:.35rem 0 0;">Meu compromisso é:</p>
+          <input type="text" id="compromisso" name="compromisso" maxlength="300"
+            placeholder="(opcional) escreva com suas palavras" style="margin-top:.5rem;">
+        </div>
+
+        <div style="margin-top:1rem;">
+          <button type="submit">Registrar meu compromisso</button>
+        </div>
+        <p id="msg" class="mensagem-envio" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="lead" style="margin-top:1.5rem;">
+        <strong>Sua atitude faz diferença.</strong><br>
+        "Inclusão: quando todos fazem parte, todos transformam."
+      </p>
+    </div>
+
+    <p style="text-align:center; margin-top:1.5rem;">
+      <a class="botao secundario" href="/">Ver todas as estações</a>
+    </p>
+
+    <footer class="rodape">
+      <p class="frase-tema">Sua participação é anônima.</p>
+    </footer>
+  </main>
+
+  <script src="/js/main.js"></script>
+  <script>
+    const form = document.getElementById('form-compromisso');
+    const msg = document.getElementById('msg');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const itens = Array.from(form.querySelectorAll('input[name="itens"]:checked')).map((i) => i.value);
+      const compromisso = document.getElementById('compromisso').value.trim();
+      if (itens.length === 0 && !compromisso) {
+        msg.textContent = 'Selecione ao menos uma atitude ou escreva seu compromisso.';
+        msg.className = 'mensagem-envio erro';
+        return;
+      }
+      const botao = form.querySelector('button[type="submit"]');
+      botao.disabled = true;
+      enviarParticipacao('/api/compromissos', { itens, compromisso }, {
+        onSucesso: () => {
+          msg.textContent = 'Compromisso registrado. Obrigado por fazer parte!';
+          msg.className = 'mensagem-envio sucesso';
+          form.reset();
+          botao.disabled = false;
+        },
+        onErro: (erro) => {
+          msg.textContent = erro;
+          msg.className = 'mensagem-envio erro';
+          botao.disabled = false;
+        },
+      });
+    });
+  </script>
+</body>
+</html>

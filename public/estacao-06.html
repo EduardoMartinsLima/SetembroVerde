@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Quiz da Inclusão — Trilha da Inclusão CAR</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="topo">
+    <span class="selo">Estação 06 · Teste seus conhecimentos</span>
+    <h1>Quiz da Inclusão</h1>
+  </header>
+
+  <main class="container">
+    <div class="card" id="quiz-card">
+      <span class="estacao-numero">06</span>
+      <h2>Você sabe mesmo?</h2>
+      <p class="lead">São apenas 5 perguntas. Você consegue acertar todas?</p>
+      <p class="progresso-quiz">Sua participação é anônima. Apenas a pontuação é registrada.</p>
+
+      <form id="form-quiz">
+        <div class="pergunta">
+          <p class="enunciado">1. O termo mais adequado para se referir a alguém com deficiência é:</p>
+          <label class="opcao"><input type="radio" name="q1" value="0"> Portador de deficiência</label>
+          <label class="opcao"><input type="radio" name="q1" value="1"> Pessoa com deficiência</label>
+          <label class="opcao"><input type="radio" name="q1" value="2"> Deficiente</label>
+          <label class="opcao"><input type="radio" name="q1" value="3"> Pessoa especial</label>
+        </div>
+
+        <div class="pergunta">
+          <p class="enunciado">2. A Lei Brasileira de Inclusão (Lei nº 13.146/2015) define deficiência considerando principalmente:</p>
+          <label class="opcao"><input type="radio" name="q2" value="0"> Apenas a condição médica da pessoa</label>
+          <label class="opcao"><input type="radio" name="q2" value="1"> A interação entre a condição da pessoa e as barreiras do ambiente</label>
+          <label class="opcao"><input type="radio" name="q2" value="2"> Apenas fatores econômicos</label>
+          <label class="opcao"><input type="radio" name="q2" value="3"> Nenhuma das anteriores</label>
+        </div>
+
+        <div class="pergunta">
+          <p class="enunciado">3. Antes de ajudar uma pessoa com deficiência, a atitude mais respeitosa é:</p>
+          <label class="opcao"><input type="radio" name="q3" value="0"> Ajudar imediatamente, sem perguntar</label>
+          <label class="opcao"><input type="radio" name="q3" value="1"> Ignorar a situação</label>
+          <label class="opcao"><input type="radio" name="q3" value="2"> Perguntar se ela precisa e como pode ser ajudada</label>
+          <label class="opcao"><input type="radio" name="q3" value="3"> Pedir para outra pessoa ajudar</label>
+        </div>
+
+        <div class="pergunta">
+          <p class="enunciado">4. Acessibilidade é importante para:</p>
+          <label class="opcao"><input type="radio" name="q4" value="0"> Somente pessoas com deficiência física</label>
+          <label class="opcao"><input type="radio" name="q4" value="1"> Somente pessoas com deficiência visual</label>
+          <label class="opcao"><input type="radio" name="q4" value="2"> Toda a sociedade, incluindo idosos, gestantes e pessoas com mobilidade reduzida</label>
+          <label class="opcao"><input type="radio" name="q4" value="3"> Apenas ambientes hospitalares</label>
+        </div>
+
+        <div class="pergunta">
+          <p class="enunciado">5. "Capacitismo" é:</p>
+          <label class="opcao"><input type="radio" name="q5" value="0"> Um tipo de tecnologia assistiva</label>
+          <label class="opcao"><input type="radio" name="q5" value="1"> Preconceito ou discriminação contra pessoas com deficiência</label>
+          <label class="opcao"><input type="radio" name="q5" value="2"> Um programa de capacitação profissional</label>
+          <label class="opcao"><input type="radio" name="q5" value="3"> Um termo médico para reabilitação</label>
+        </div>
+
+        <button type="submit">Ver meu resultado</button>
+        <p id="erro-quiz" class="mensagem-envio erro" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <div class="card oculto" id="resultado-card">
+      <h2 id="resultado-titulo"></h2>
+      <p id="resultado-texto" class="lead"></p>
+      <p id="resultado-pontuacao" class="destaque"></p>
+      <button type="button" id="btn-refazer" class="botao secundario">Refazer o quiz</button>
+    </div>
+
+    <p style="text-align:center; margin-top:1.5rem;">
+      <a class="botao secundario" href="/">Ver todas as estações</a>
+    </p>
+
+    <footer class="rodape">
+      <p class="frase-tema">"Inclusão: quando todos fazem parte, todos transformam."</p>
+    </footer>
+  </main>
+
+  <script src="/js/main.js"></script>
+  <script>
+    const respostasCertas = { q1: '1', q2: '1', q3: '2', q4: '2', q5: '1' };
+    const form = document.getElementById('form-quiz');
+    const erro = document.getElementById('erro-quiz');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const perguntas = Object.keys(respostasCertas);
+      const naoRespondidas = perguntas.some((p) => !form.querySelector(`input[name="${p}"]:checked`));
+      if (naoRespondidas) {
+        erro.textContent = 'Responda todas as perguntas antes de continuar.';
+        return;
+      }
+      erro.textContent = '';
+
+      let acertos = 0;
+      perguntas.forEach((p) => {
+        const marcada = form.querySelector(`input[name="${p}"]:checked`).value;
+        if (marcada === respostasCertas[p]) acertos++;
+      });
+
+      mostrarResultado(acertos, perguntas.length);
+      enviarParticipacao('/api/quiz', { acertos, total: perguntas.length });
+    });
+
+    function mostrarResultado(acertos, total) {
+      document.getElementById('quiz-card').classList.add('oculto');
+      const card = document.getElementById('resultado-card');
+      card.classList.remove('oculto');
+
+      const titulo = document.getElementById('resultado-titulo');
+      const texto = document.getElementById('resultado-texto');
+
+      if (acertos === 5) {
+        titulo.textContent = 'Parabéns!';
+        texto.textContent = 'Você mandou muito bem! Mas lembre-se: inclusão não é uma prova que termina. É uma atitude que praticamos todos os dias.';
+      } else if (acertos >= 3) {
+        titulo.textContent = 'Muito bem!';
+        texto.textContent = 'Você já está no caminho. Que tal continuar aprendendo?';
+      } else {
+        titulo.textContent = 'Toda mudança começa com conhecimento.';
+        texto.textContent = 'O importante é estar disposto a aprender, refletir e transformar atitudes.';
+      }
+
+      document.getElementById('resultado-pontuacao').textContent = `Você acertou ${acertos} de ${total} perguntas.`;
+    }
+
+    document.getElementById('btn-refazer').addEventListener('click', () => {
+      form.reset();
+      document.getElementById('resultado-card').classList.add('oculto');
+      document.getElementById('quiz-card').classList.remove('oculto');
+    });
+  </script>
+</body>
+</html>
