@@ -45,6 +45,21 @@ a { color: var(--verde-escuro); }
   text-align: center;
 }
 
+.topo .logo-topo {
+  display: inline-block;
+  background: #fff;
+  border-radius: 12px;
+  padding: .4rem .6rem;
+  margin-bottom: .6rem;
+  line-height: 0;
+}
+
+.topo .logo-topo img {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+
 .topo .selo {
   display: inline-block;
   font-size: .8rem;
