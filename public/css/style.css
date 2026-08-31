@@ -48,15 +48,17 @@ a { color: var(--verde-escuro); }
 .topo .logo-topo {
   display: inline-block;
   background: #fff;
-  border-radius: 12px;
-  padding: .4rem .6rem;
+  border-radius: 10px;
+  padding: .3rem .5rem;
   margin-bottom: .6rem;
   line-height: 0;
+  max-width: 110px;
 }
 
 .topo .logo-topo img {
   display: block;
-  height: 44px;
+  max-width: 100%;
+  height: 32px;
   width: auto;
 }
 
