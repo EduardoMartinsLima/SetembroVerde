@@ -110,7 +110,9 @@
     function ajustar() {
       var largura = vitrine.clientWidth;
       var escala = Math.min(1, largura / 1200);
-      palco.style.transform = 'scale(' + escala + ')';
+      var larguraRenderizada = 1200 * escala;
+      var deslocamento = Math.max(0, (largura - larguraRenderizada) / 2);
+      palco.style.transform = 'translateX(' + deslocamento + 'px) scale(' + escala + ')';
       vitrine.style.height = (palco.offsetHeight * escala) + 'px';
     }
     window.addEventListener('resize', ajustar);
