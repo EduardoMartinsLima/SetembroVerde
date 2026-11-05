@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel PNP</title>
+  <meta name="description" content="Monitoramento em tempo real do formulário PNP — Informações Ambientais e Sociais (SurveyCTO)">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230f6b4f'/%3E%3Cpath d='M6 16v-4M10 16V8M14 16v-6M18 16V6' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    try { var t = localStorage.getItem('painel-tema'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="marca">
+        <div class="logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 19v-5M10 19V9M15 19v-7M20 19V5"/></svg>
+        </div>
+        <div>
+          <h1 id="titulo">Painel PNP</h1>
+          <p id="subtitulo">Carregando…</p>
+        </div>
+      </div>
+      <div class="status">
+        <span class="pill" id="pill-vivo"><span class="vivo off" id="ponto"></span><b id="vivo-txt">Conectando…</b></span>
+        <span class="pill" id="pill-atual" title="Horário da última consulta bem-sucedida ao SurveyCTO">Atualizado —</span>
+        <span class="pill" id="pill-prox" title="Próxima consulta automática ao SurveyCTO">Próxima —</span>
+        <button class="btn-icone" id="btn-tema" title="Alternar tema claro/escuro" aria-label="Alternar tema claro/escuro">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap"><section class="kpis" id="kpis" aria-label="Indicadores gerais"></section></div>
+
+    <div class="barra">
+      <div class="wrap">
+        <div class="seg" id="seg-modo" role="group" aria-label="Recorte por edital"></div>
+        <nav class="nav" id="nav" aria-label="Seções"></nav>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div id="avisos"></div>
+      <div id="conteudo"><div class="carregando">Carregando dados do SurveyCTO…</div></div>
+      <footer id="rodape"></footer>
+    </div>
+  </main>
+
+  <div id="tip" role="tooltip"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

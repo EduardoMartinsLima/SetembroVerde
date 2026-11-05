@@ -1,0 +1,13 @@
+{
+  "name": "painel-pnp-surveycto",
+  "version": "1.0.0",
+  "description": "Painel de monitoramento em tempo real do formulario PNP - Informacoes Ambientais e Sociais (SurveyCTO)",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "demo": "node server.js --demo",
+    "testar-conexao": "node server.js --testar"
+  },
+  "engines": { "node": ">=18" }
+}

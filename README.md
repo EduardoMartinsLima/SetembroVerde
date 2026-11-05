@@ -9,6 +9,11 @@ com uma experiência diferente: informação, quiz, reflexão ou participação.
 e-mail ou login. Não é feito nenhum registro de IP ou identificador do
 navegador junto das respostas armazenadas.
 
+
+> **Também neste repositório:** [`painel-surveycto/`](painel-surveycto/README.md) —
+> painel de monitoramento em tempo real do formulário PNP (SurveyCTO), projeto
+> independente com seu próprio `npm start`.
+
 ## Dois back-ends, um único front-end
 
 O projeto tem **duas implementações de back-end** que servem exatamente as
