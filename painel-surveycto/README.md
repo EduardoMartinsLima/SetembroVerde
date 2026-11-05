@@ -49,6 +49,16 @@ npm start                 # http://localhost:3100
 Para conhecer o painel sem acessar o SurveyCTO: `npm run demo` (dados
 **fictícios**, sinalizados por uma faixa amarela no topo).
 
+### Protótipo em HTML único
+
+```bash
+npm run prototipo         # gera prototipo/painel-pnp.html
+```
+
+Gera um único `.html` com um instantâneo dos dados embutido (abre direto no
+navegador, sem servidor). CNPJs viram códigos e datas de nascimento viram só o
+ano. Não atualiza sozinho e fica fora do git, pois contém dados reais.
+
 ## Arquivos opcionais (recomendados) em `config/`
 
 | Arquivo | Para quê |

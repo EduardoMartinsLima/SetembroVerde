@@ -26,6 +26,8 @@ const DEMO = process.argv.includes('--demo') || process.env.DEMO === '1';
 const TESTAR = process.argv.includes('--testar');
 // --arquivo=dados.json lê as submissões de um arquivo (testes, sem consultar a API)
 const ARQUIVO = (process.argv.find((a) => a.startsWith('--arquivo=')) || '').slice(10);
+// --prototipo=saida.html gera um HTML único (dados embutidos, sem servidor) e encerra
+const PROTOTIPO = (process.argv.find((a) => a.startsWith('--prototipo=')) || '').slice(12);
 const PORTA = Number(process.env.PORTA || process.env.PORT || 3100);
 const INTERVALO = Math.max(30, Number(process.env.INTERVALO_SEGUNDOS || (DEMO ? 20 : 300)));
 
@@ -320,12 +322,55 @@ const servidor = http.createServer((req, res) => {
   fs.createReadStream(arq).pipe(res);
 });
 
+// ---------------------------------------------------------------- protótipo
+
+// Reduz dados pessoais antes de embutir: CNPJ vira um código curto (mantém o
+// cruzamento com a base e a contagem de reenvios) e o nascimento vira só o ano.
+function anonimizar(p) {
+  const cod = (v) => {
+    const d = String(v || '').replace(/\D/g, '');
+    return d ? 'OP-' + crypto.createHash('sha256').update(d).digest('hex').slice(0, 10) : v;
+  };
+  for (const r of p.registros) {
+    if (r._idOp) r._idOp = cod(r._idOp);
+    if (r.nascimento_presidente) {
+      const m = /(\d{4})/.exec(r.nascimento_presidente);
+      r.nascimento_presidente = m ? m[1] : '';
+    }
+    delete r.KEY;
+  }
+  p.registros.forEach((r, i) => (r.KEY = 'r' + i));
+  if (p.base) p.base = p.base.map((b) => ({ ...b, id: cod(b.id) }));
+  return p;
+}
+
+function gerarPrototipo(saida) {
+  const p = anonimizar(payload());
+  p.meta.prototipo = true;
+  p.meta.erro = null;
+  const ler = (f) => fs.readFileSync(path.join(PUB, f), 'utf8');
+  const json = JSON.stringify(p).replace(/</g, '\\u003c');
+  let html = ler('index.html')
+    .replace('<link rel="stylesheet" href="style.css">', () => `<style>\n${ler('style.css')}\n</style>`)
+    .replace('<script src="app.js"></script>', () => `<script>window.PAINEL_DADOS = ${json};</script>\n<script>\n${ler('app.js')}\n</script>`)
+    .replace('<title>Painel PNP</title>', '<title>Painel PNP · Protótipo</title>');
+  fs.writeFileSync(saida, html);
+  console.log(`Protótipo gerado: ${saida} (${(html.length / 1024).toFixed(0)} KB, ${p.registros.length} submissões)`);
+}
+
 // ---------------------------------------------------------------- início
 
 async function main() {
   if (!DEMO && !ARQUIVO && (!SCTO.usuario || !SCTO.senha)) {
     console.error('Defina SCTO_USUARIO e SCTO_SENHA no arquivo .env (veja .env.example), ou rode "npm run demo".');
     process.exit(1);
+  }
+  if (PROTOTIPO) {
+    estado.emAndamento = false;
+    await atualizar();
+    if (estado.erro) { console.error('FALHA:', estado.erro.mensagem); process.exit(2); }
+    gerarPrototipo(path.resolve(PROTOTIPO));
+    process.exit(0);
   }
   if (TESTAR) {
     carregarArquivosLocais();

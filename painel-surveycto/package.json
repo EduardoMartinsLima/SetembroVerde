@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "demo": "node server.js --demo",
-    "testar-conexao": "node server.js --testar"
+    "testar-conexao": "node server.js --testar",
+    "prototipo": "node server.js --prototipo=prototipo/painel-pnp.html"
   },
   "engines": { "node": ">=18" }
 }

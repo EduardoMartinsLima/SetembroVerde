@@ -2,3 +2,6 @@
 # Dados reais (podem conter informações pessoais/sensíveis — LGPD)
 config/base_conveniadas.csv
 config/formulario.xlsx
+
+# Protótipo gerado com dados reais
+prototipo/

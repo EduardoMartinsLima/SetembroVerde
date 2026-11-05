@@ -10,6 +10,8 @@
   let chavesConhecidas = null;
   let statusAtual = null;
   let sseOk = false;
+  // Protótipo standalone: dados embutidos na própria página (sem servidor).
+  const EMBUTIDO = window.PAINEL_DADOS || null;
 
   const $ = (s, el) => (el || document).querySelector(s);
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -606,6 +608,7 @@
   function renderAvisos(gs) {
     const m = D.meta;
     const av = [];
+    if (m.prototipo) av.push(`<div class="aviso demo">🧪 <div><b>PROTÓTIPO</b> — instantâneo dos dados reais do SurveyCTO em ${esc(dataHora(new Date(m.atualizadoEm)))} (${fmt(D.registros.length)} submissões), sem atualização automática. A versão ao vivo é o servidor (<code>npm start</code>). CNPJs substituídos por códigos e datas de nascimento reduzidas ao ano.</div></div>`);
     if (m.demo) av.push(`<div class="aviso demo">⚠️ <div><b>DADOS DE DEMONSTRAÇÃO.</b> Valores fictícios gerados localmente (<code>npm run demo</code>). Para dados reais, configure o <code>.env</code> e rode <code>npm start</code>.</div></div>`);
     if (m.erro) av.push(`<div class="aviso erro">⛔ <div><b>Falha na última consulta ao SurveyCTO</b> (${esc(dataHora(new Date(m.erro.em)))}): ${esc(m.erro.mensagem)}${m.erro.dica ? `<br>${esc(m.erro.dica)}` : ''}${m.atualizadoEm ? `<br>Exibindo os últimos dados obtidos em ${esc(dataHora(new Date(m.atualizadoEm)))}.` : ''}</div></div>`);
     if (!m.demo && m.atualizadoEm && !m.temXlsForm) av.push(`<div class="aviso info">ℹ️ <div>Sem o XLSForm, as opções aparecem com o <b>código</b> salvo no SurveyCTO. Baixe a definição do formulário (Design → Download) e salve como <code>config/formulario.xlsx</code> para exibir os rótulos.</div></div>`);
@@ -654,9 +657,13 @@
   // ------------------------------------------------------------ tempo real
   async function carregar() {
     try {
-      const r = await fetch('api/dados', { cache: 'no-store' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const novo = await r.json();
+      let novo;
+      if (EMBUTIDO) novo = JSON.parse(JSON.stringify(EMBUTIDO));
+      else {
+        const r = await fetch('api/dados', { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        novo = await r.json();
+      }
       const anteriores = chavesConhecidas;
       D = novo;
       preparar();
@@ -678,6 +685,14 @@
   }
 
   function pills() {
+    if (EMBUTIDO) {
+      $('#ponto').className = 'vivo off';
+      $('#vivo-txt').textContent = 'Protótipo · instantâneo';
+      const em = D && D.meta.atualizadoEm ? new Date(D.meta.atualizadoEm) : null;
+      $('#pill-atual').textContent = em ? `Dados de ${dataHora(em)}` : '';
+      $('#pill-prox').style.display = 'none';
+      return;
+    }
     const s = statusAtual || {};
     const ponto = $('#ponto'), txt = $('#vivo-txt');
     if (s.erro) { ponto.className = 'vivo erro'; txt.textContent = 'Erro na consulta'; }
@@ -708,5 +723,5 @@
     });
   }
 
-  carregar().then(conectar);
+  carregar().then(() => { if (!EMBUTIDO) conectar(); });
 })();
