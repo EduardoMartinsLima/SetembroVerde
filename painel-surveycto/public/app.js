@@ -244,15 +244,34 @@
     return `<div class="legenda">${gs.map((g) => `<span><i class="chip-cor" style="background:${g.cor}"></i>${esc(g.nome)} · ${esc(g.descricao)}</span>`).join('')}</div>`;
   }
 
-  function barrasHtml(cats, gs, valores, rotulo, tipBase) {
+  // Cor por categoria quando há uma única série (modo "Todos" ou um edital):
+  // escalas ordenadas -> degradê azul (claro->escuro); categorias soltas ->
+  // paleta categórica em ordem fixa; "Outras/Nenhum" -> cinza.
+  const NAO_ORDINAL = new Set(['sim', 'nao', 'nao_rural', 'nao_urbano', 'Sim', 'Não']);
+  function paleta(cats, tipo) {
+    const ordem = (D.config.rotulos && D.config.rotulos.ordem) || [];
+    const ordinal = tipo === 'faixa_etaria' || tipo === 'numero' ||
+      (cats.length >= 3 && cats.every((c) => ordem.includes(c) && !NAO_ORDINAL.has(c)));
+    const neutro = (c) => /^(__outras|outr|nenhum|nao_tem|ninguem)/i.test(c);
+    if (ordinal) {
+      const n = cats.length;
+      return (c, i) => `var(--seq-${n <= 1 ? 3 : 1 + Math.round((i / (n - 1)) * 5)})`;
+    }
+    if (cats.filter((c) => !neutro(c)).length > 8) return () => 'var(--todos)';
+    const idx = new Map();
+    cats.filter((c) => !neutro(c)).forEach((c, i) => idx.set(c, i));
+    return (c) => (neutro(c) ? 'var(--outros)' : `var(--cat-${idx.get(c) + 1})`);
+  }
+
+  function barrasHtml(cats, gs, valores, rotulo, tipBase, corCat) {
     // valores[gi].get(cat) = {n, base}
-    return `<div class="barras">${cats.map((c) => {
+    return `<div class="barras">${cats.map((c, ci) => {
       const tot = gs.reduce((a, _, gi) => a + ((valores[gi].get(c) || {}).n || 0), 0);
       const linhas = gs.map((g, gi) => {
         const { n = 0, base = 0 } = valores[gi].get(c) || {};
         const p = base ? (n / base) * 100 : 0;
         const tipTxt = `${rotulo(c)}\n${g.nome} (${g.descricao}): ${fmt(n)} de ${fmt(base)} ${tipBase} — ${pct(n, base, 1)}`;
-        return `<div class="linha" data-tip="${esc(tipTxt)}"><div class="trilho"><div class="barra-v" style="width:${p.toFixed(2)}%;${n ? 'min-width:2px;' : ''}background:${g.cor}"></div></div><div class="num"><b>${fmt(n)}</b> · ${pct(n, base)}</div></div>`;
+        return `<div class="linha" data-tip="${esc(tipTxt)}"><div class="trilho"><div class="barra-v" style="width:${p.toFixed(2)}%;${n ? 'min-width:2px;' : ''}background:${gs.length === 1 && corCat ? corCat(c, ci) : g.cor}"></div></div><div class="num"><b>${fmt(n)}</b> · ${pct(n, base)}</div></div>`;
       }).join('');
       return `<div><div class="cat-rot"><span>${esc(rotulo(c))}</span>${gs.length > 1 ? `<span class="tot">${fmt(tot)} no total</span>` : ''}</div>${linhas}</div>`;
     }).join('')}</div>`;
@@ -297,7 +316,7 @@
     }
     const valores = stats.map((s) => new Map(cats.map((c) => [c, { n: s.cont.get(c) || 0, base: s.resp }])));
     const rotulo = (c) => (c === '__outras' ? 'Outras respostas' : tipo === 'faixa_etaria' || tipo === 'marcado' ? c : rotuloOpcao(v.campo, c));
-    const corpo = tabelas.has(id) ? tabelaHtml(cats, gs, valores, rotulo) : legenda(gs) + barrasHtml(cats, gs, valores, rotulo, tipo === 'multipla' ? 'OP (múltipla escolha)' : 'OP');
+    const corpo = tabelas.has(id) ? tabelaHtml(cats, gs, valores, rotulo) : legenda(gs) + barrasHtml(cats, gs, valores, rotulo, tipo === 'multipla' ? 'OP (múltipla escolha)' : 'OP', paleta(cats, tipo));
     let extra = null;
     if (tipo === 'faixa_etaria') {
       extra = (gi) => {
@@ -366,7 +385,7 @@
           .map(([r, k, d]) => `<tr><td>${r}</td>${est.map((e) => `<td>${e ? fmt(e[k], d) : '—'}</td>`).join('')}</tr>`).join('')
       }${relacao ? `<tr><td>${esc(v.relacao.rotulo)}</td>${relacao.map((x) => `<td>${pct(x.a, x.b, 1)}</td>`).join('')}</tr>` : ''}</tbody></table></div>` + tabelaHtml(cats, gs, valores, (c) => c);
     } else {
-      corpo = `<div class="stats">${statHtml}</div><div class="grupo-tit" style="margin:0 0 8px">Distribuição das OP</div>` + legenda(gs) + barrasHtml(cats, gs, valores, (c) => c, 'OP');
+      corpo = `<div class="stats">${statHtml}</div><div class="grupo-tit" style="margin:0 0 8px">Distribuição das OP</div>` + legenda(gs) + barrasHtml(cats, gs, valores, (c) => c, 'OP', paleta(cats, 'numero'));
     }
     const stats = gs.map((g, gi) => ({ resp: listas[gi].length, vazios: g.regs.length - listas[gi].length }));
     return cartao(id, titulo, v.campo, corpo, rodapeResp(gs, stats));
@@ -426,7 +445,7 @@
           ? arr.map(([w, n], i) => {
             const k = Math.pow(n / maxN, 0.75);
             const size = 12 + k * 26;
-            const cor = k > 0.55 ? 'var(--text-primary)' : 'var(--text-secondary)';
+            const cor = `var(--seq-${k > 0.7 ? 6 : k > 0.45 ? 5 : k > 0.25 ? 4 : 3})`;
             return `<span style="font-size:${size.toFixed(1)}px;color:${cor}" data-tip="${esc(`${w}\n${fmt(n)} OP mencionam — ${pct(n, total, 1)} das ${fmt(total)} respostas (${g.nome})`)}">${esc(w)}</span>`;
           }).join('')
           : '<span class="vazio">Sem respostas</span>';
@@ -458,14 +477,14 @@
         ? { rot: 'Cobertura da coleta', val: pct(cobertas.size, baseIds.size, 1), sub: `faltam ${fmt(baseIds.size - cobertas.size)} OP responder` }
         : { rot: 'Ritmo (últimos 7 dias)', val: fmt(n7 / 7, 1), small: '/dia', sub: 'média diária de submissões' },
       { rot: 'Última resposta', val: ultima ? relativo(ultima) : '—', sub: ultima ? dataHora(ultima) : 'nenhuma submissão ainda' },
-    ].map((k, i) => `<div class="kpi" id="kpi-${i}"><div class="rot">${esc(k.rot)}</div><div class="val">${esc(k.val)}${k.small ? `<small>${esc(k.small)}</small>` : ''}</div><div class="sub">${k.sub}</div></div>`).join('');
+    ].map((k, i) => `<div class="kpi" id="kpi-${i}" style="--kpi-cor:var(--cat-${[1, 3, 7, 2][i]})"><div class="rot">${esc(k.rot)}</div><div class="val">${esc(k.val)}${k.small ? `<small>${esc(k.small)}</small>` : ''}</div><div class="sub">${k.sub}</div></div>`).join('');
   }
 
   function cardCobertura(gs) {
     const temBase = D._base.length > 0;
     if (!temBase) {
       const corpo = `<div class="aviso info" style="margin:0 0 14px"><div>Para comparar <b>OP que responderam × OP que não responderam</b>, salve a lista de conveniadas do DATACAR em <code>config/base_conveniadas.csv</code> (colunas <code>edital;cnpj;nome</code>).</div></div>` +
-        legenda(gs) + barrasHtml(['subm', 'ops'], gs, gs.map((g) => new Map([['subm', { n: g.todas.length, base: g.todas.length }], ['ops', { n: g.regs.length, base: g.todas.length }]])), (c) => (c === 'subm' ? 'Submissões recebidas' : 'OP distintas (CNPJ) — reenvios descontados'), 'submissões');
+        legenda(gs) + barrasHtml(['subm', 'ops'], gs, gs.map((g) => new Map([['subm', { n: g.todas.length, base: g.todas.length }], ['ops', { n: g.regs.length, base: g.todas.length }]])), (c) => (c === 'subm' ? 'Submissões recebidas' : 'OP distintas (CNPJ) — reenvios descontados'), 'submissões', paleta(['subm', 'ops'], 'categoria'));
       return cartao('cobertura', 'OP que responderam × não responderam', '', corpo, '', { semTabela: true });
     }
     const corpo = `<div class="cob">${gs.map((g) => {
