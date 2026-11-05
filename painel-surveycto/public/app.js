@@ -22,14 +22,15 @@
 
   // ------------------------------------------------------------ datas
   const MESES = { jan: 0, feb: 1, fev: 1, mar: 2, apr: 3, abr: 3, may: 4, mai: 4, jun: 5, jul: 6, aug: 7, ago: 7, sep: 8, set: 8, oct: 9, out: 9, nov: 10, dec: 11, dez: 11 };
-  function parseData(v) {
+  function parseData(v, utc) {
     if (!v) return null;
     const s = String(v).trim();
     let m = /^([A-Za-z]{3})[a-z]*\.? (\d{1,2}), (\d{4})(?:,? (\d{1,2}):(\d{2})(?::(\d{2}))? ?([AP]M)?)?/i.exec(s);
     if (m && MESES[m[1].toLowerCase()] !== undefined) {
       let h = +(m[4] || 0);
       if (m[7]) { const pm = m[7].toUpperCase() === 'PM'; if (h === 12) h = pm ? 12 : 0; else if (pm) h += 12; }
-      return new Date(+m[3], MESES[m[1].toLowerCase()], +m[2], h, +(m[5] || 0), +(m[6] || 0));
+      const args = [+m[3], MESES[m[1].toLowerCase()], +m[2], h, +(m[5] || 0), +(m[6] || 0)];
+      return utc ? new Date(Date.UTC(...args)) : new Date(...args);
     }
     m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(s);
     if (m) return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
@@ -75,7 +76,7 @@
     for (const b of base) { if (b._id) basePorId.set(b._id, b); if (b._nome) basePorId.set('n:' + b._nome, b); }
 
     for (const r of D.registros) {
-      r._data = parseData(r.SubmissionDate);
+      r._data = parseData(r.SubmissionDate, D.config.datasEmUTC);
       const id = normId(r._idOp), nome = normId(r._nomeOp);
       r._op = id || (nome ? 'n:' + nome : r.KEY);
       r._base = (id && basePorId.get(id)) || (nome && basePorId.get('n:' + nome)) || null;
@@ -84,16 +85,23 @@
     D.registros.sort((a, b) => (a._data || 0) - (b._data || 0));
     D._base = base;
     D._editais = editais;
+    // Para os gráficos, vale a submissão mais recente de cada OP (CNPJ/nome).
+    const ultimaPorOp = new Map();
+    for (const r of D.registros) ultimaPorOp.set(r._op, r);
+    D._unicos = [...ultimaPorOp.values()];
+    D._semEdital = !D.registros.some((r) => r._g);
   }
 
   const COR = { e1: 'var(--e1)', e2: 'var(--e2)', todos: 'var(--todos)' };
+  const modoEfetivo = () => (D && D._semEdital ? 'todos' : modo);
   function grupos() {
     const E = D._editais;
-    const g = (e) => ({ id: e.id, nome: e.nome, descricao: e.descricao, cor: COR[e.id] || 'var(--todos)', regs: D.registros.filter((r) => r._g === e.id), base: D._base.filter((b) => b._g === e.id) });
+    const g = (e) => ({ id: e.id, nome: e.nome, descricao: e.descricao, cor: COR[e.id] || 'var(--todos)', regs: D._unicos.filter((r) => r._g === e.id), todas: D.registros.filter((r) => r._g === e.id), base: D._base.filter((b) => b._g === e.id) });
+    const modo = modoEfetivo();
     if (modo === 'comparar') return E.map(g);
     const e = E.find((x) => x.id === modo);
     if (e) return [g(e)];
-    return [{ id: 'todos', nome: 'Todos', descricao: 'Editais 1 e 2', cor: COR.todos, regs: D.registros, base: D._base }];
+    return [{ id: 'todos', nome: 'Todos', descricao: 'Editais 1 e 2', cor: COR.todos, regs: D._unicos, todas: D.registros, base: D._base }];
   }
 
   // ------------------------------------------------------------ tooltip
@@ -127,6 +135,7 @@
   }
   function tipoDe(v, regs) {
     if (v.tipo && v.tipo !== 'auto') return v.tipo;
+    if ((D.meta.reconstruidas || []).includes(v.campo)) return 'multipla';
     const e = D.esquema[v.campo];
     if (e) {
       if (e.tipo === 'select_one') return 'categoria';
@@ -136,6 +145,7 @@
     }
     const vals = regs.map((r) => r[v.campo]).filter((x) => x != null && x !== '');
     if (!vals.length) return 'categoria';
+    if (vals.every((x) => x === '1') && !(D.esquema[v.campo])) return 'marcado';
     const distintos = new Set(vals);
     const numerico = vals.every((x) => /^-?\d+([.,]\d+)?$/.test(x));
     if (numerico && distintos.size > 12) return 'numero';
@@ -143,9 +153,18 @@
     if (distintos.size <= 15 || distintos.size / vals.length < 0.3) return 'categoria';
     return 'nuvem';
   }
+  function embelezar(v) {
+    let s = String(v);
+    if (/^[A-ZÀ-Ú0-9_ ]+$/.test(s) && s.replace(/[^A-ZÀ-Ú]/g, '').length > 3) s = s.toLowerCase();
+    s = s.replace(/_/g, ' ').replace(/\bnao\b/gi, 'não').replace(/\bsao\b/gi, 'são').trim();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
   function rotuloOpcao(campo, valor) {
     const e = D.esquema[campo];
-    return (e && e.opcoes && e.opcoes[valor]) || valor;
+    if (e && e.opcoes && e.opcoes[valor]) return e.opcoes[valor];
+    const R = D.config.rotulos || {};
+    const porCampo = (R.campos || {})[campo] || {};
+    return porCampo[valor] || (R.geral || {})[valor] || embelezar(valor);
   }
 
   // ------------------------------------------------------------ agregações
@@ -168,12 +187,19 @@
     return FAIXAS[Math.floor(a / 10) - 1];
   }
 
-  function contarCategorias(regs, campo, tipo) {
+  function contarCategorias(regs, campo, tipo, pai) {
     const cont = new Map();
     let resp = 0, vazios = 0;
     const idades = [];
     for (const r of regs) {
       const v = r[campo];
+      if (tipo === 'marcado') {
+        if (pai && !r[pai]) { vazios++; continue; }
+        resp++;
+        const k = v === '1' ? 'Sim' : 'Não';
+        cont.set(k, (cont.get(k) || 0) + 1);
+        continue;
+      }
       if (v == null || v === '') { vazios++; continue; }
       let chaves;
       if (tipo === 'multipla') chaves = [...new Set(String(v).trim().split(/\s+/))];
@@ -202,8 +228,12 @@
         return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib) || total.get(b) - total.get(a);
       });
     }
+    if (tipo === 'marcado') return ['Sim', 'Não'];
     if (chaves.every((k) => /^-?\d+$/.test(k)) && chaves.length <= 15) return chaves.sort((a, b) => a - b);
-    return chaves.sort((a, b) => total.get(b) - total.get(a));
+    const ordem = (D.config.rotulos && D.config.rotulos.ordem) || [];
+    const pos = (k) => { const i = ordem.indexOf(k); return i < 0 ? 1e9 : i; };
+    const fim = (k) => (/^(outr|nenhum|nao_tem|ninguem)/i.test(k) ? 1 : 0);
+    return chaves.sort((a, b) => pos(a) - pos(b) || fim(a) - fim(b) || total.get(b) - total.get(a));
   }
 
   // ------------------------------------------------------------ componentes
@@ -242,12 +272,12 @@
   }
 
   function rodapeResp(gs, stats, extra) {
-    return gs.map((g, gi) => `<span>${gs.length > 1 ? `<i class="chip-cor" style="background:${g.cor}"></i>` : ''}${esc(g.nome)}: ${fmt(stats[gi].resp)} resp.${stats[gi].vazios ? ` · ${fmt(stats[gi].vazios)} sem resposta` : ''}${extra ? extra(gi) : ''}</span>`).join('');
+    return gs.map((g, gi) => `<span>${gs.length > 1 ? `<i class="chip-cor" style="background:${g.cor}"></i>` : ''}${esc(g.nome)}: ${fmt(stats[gi].resp)} resp.${stats[gi].vazios ? ` · ${fmt(stats[gi].vazios)} sem resposta/não se aplica` : ''}${extra ? extra(gi) : ''}</span>`).join('');
   }
 
   // ------------------------------------------------------------ cartões por tipo
   function cardCategoria(v, tipo, gs) {
-    const stats = gs.map((g) => contarCategorias(g.regs, v.campo, tipo));
+    const stats = gs.map((g) => contarCategorias(g.regs, v.campo, tipo, v.pai && D.registros.some((r) => r[v.pai]) ? v.pai : null));
     const id = v.campo;
     const titulo = rotuloCampo(v);
     const respondeu = stats.some((s) => s.resp);
@@ -264,7 +294,7 @@
       }
     }
     const valores = stats.map((s) => new Map(cats.map((c) => [c, { n: s.cont.get(c) || 0, base: s.resp }])));
-    const rotulo = (c) => (c === '__outras' ? 'Outras respostas' : tipo === 'faixa_etaria' ? c : rotuloOpcao(v.campo, c));
+    const rotulo = (c) => (c === '__outras' ? 'Outras respostas' : tipo === 'faixa_etaria' || tipo === 'marcado' ? c : rotuloOpcao(v.campo, c));
     const corpo = tabelas.has(id) ? tabelaHtml(cats, gs, valores, rotulo) : legenda(gs) + barrasHtml(cats, gs, valores, rotulo, tipo === 'multipla' ? 'OP (múltipla escolha)' : 'OP');
     let extra = null;
     if (tipo === 'faixa_etaria') {
@@ -341,9 +371,24 @@
   }
 
   const STOP = new Set(('a o e é de da do das dos em no na nos nas um uma uns umas para pra por com sem que se ao aos à às ou os as como mais menos muito pouco já não sim são ser foi tem ter há quando onde qual quais seu sua seus suas nosso nossa isso este esta esse essa todo toda todos todas também ainda pelo pela pelos pelas sobre entre até após cada outro outra outros outras mesmo mesma lhe eles elas ele ela nós vez vezes etc através forma meio usa usam uso feito feita fazer faz possui possuem pois porém mas então sempre algum alguma alguns algumas nenhum nenhuma' ).split(/\s+/));
+  const STOP2 = new Set('nao possue temos tem ha existe unidade nada sao esta estao sera serao quando durante sendo pode podem deve devem caso bem forma'.split(' '));
+  // chave normalizada (sem acento, singular simples) -> agrupa "Protetores"/"protetor"
+  const chavePalavra = (w) => {
+    let k = semAcento(w);
+    if (k.length > 4 && /[^s]es$/.test(k) && /(r|z|l)es$/.test(k)) k = k.slice(0, -2);
+    else if (k.length > 3 && k.endsWith('s') && !k.endsWith('ss')) k = k.slice(0, -1);
+    return k;
+  };
   function palavras(texto) {
-    return [...new Set(String(texto).toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, ' ').split(/\s+/).filter((w) => w.length > 2 && !STOP.has(w) && !/^\d+$/.test(w)))];
+    const out = new Map();
+    for (const w of String(texto).toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, ' ').split(/\s+/)) {
+      if (w.length <= 2 || STOP.has(w) || STOP2.has(semAcento(w)) || /^\d+$/.test(w)) continue;
+      const k = chavePalavra(w);
+      if (!out.has(k)) out.set(k, w);
+    }
+    return out; // chave -> forma original
   }
+  const SEM_MEDIDA = /^(nenhum|nenhuma|nada|nao (possui|possue|possuimos|tem|temos|ha|existe|se aplica|utiliza|faz)|n\/a|sem medidas?|inexistente)\b/;
 
   function cardNuvem(v, gs) {
     const id = v.campo;
@@ -357,9 +402,20 @@
       corpo = `<div class="tabela-wrap" style="max-height:320px;overflow:auto"><table class="tab"><thead><tr><th>Resposta</th><th>Edital</th></tr></thead><tbody>${todas.map((d) => `<tr><td>${esc(d.t)}</td><td>${esc(d.g.nome)}</td></tr>`).join('')}</tbody></table></div>`;
     } else {
       corpo = `<div class="nuvens">${gs.map((g, gi) => {
-        const cont = new Map();
-        for (const d of docs[gi]) for (const w of palavras(d.t)) cont.set(w, (cont.get(w) || 0) + 1);
-        const top = [...cont.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40);
+        const cont = new Map(), formas = new Map();
+        let semMedida = 0;
+        for (const d of docs[gi]) {
+          if (SEM_MEDIDA.test(semAcento(d.t.toLowerCase()).trim())) { semMedida++; continue; }
+          for (const [k, w] of palavras(d.t)) {
+            cont.set(k, (cont.get(k) || 0) + 1);
+            const f = formas.get(k) || new Map();
+            f.set(w, (f.get(w) || 0) + 1);
+            formas.set(k, f);
+          }
+        }
+        const forma = (k) => [...formas.get(k).entries()].sort((a, b) => b[1] - a[1])[0][0];
+        const top = [...cont.entries()].sort((a, b) => b[1] - a[1]).slice(0, 45).map(([k, n]) => [forma(k), n]);
+        docs[gi].semMedida = semMedida;
         const maxN = top.length ? top[0][1] : 1;
         const arr = [];
         top.forEach((w, i) => (i % 2 ? arr.push(w) : arr.unshift(w)));
@@ -372,7 +428,7 @@
             return `<span style="font-size:${size.toFixed(1)}px;color:${cor}" data-tip="${esc(`${w}\n${fmt(n)} OP mencionam — ${pct(n, total, 1)} das ${fmt(total)} respostas (${g.nome})`)}">${esc(w)}</span>`;
           }).join('')
           : '<span class="vazio">Sem respostas</span>';
-        return `<div class="nuvem-box">${gs.length > 1 ? `<div class="nuvem-tit"><i class="chip-cor" style="background:${g.cor}"></i>${esc(g.nome)} · ${esc(g.descricao)}</div>` : ''}<div class="nuvem">${nuvem}</div></div>`;
+        return `<div class="nuvem-box">${gs.length > 1 ? `<div class="nuvem-tit"><i class="chip-cor" style="background:${g.cor}"></i>${esc(g.nome)} · ${esc(g.descricao)}</div>` : ''}<div class="nuvem">${nuvem}</div>${docs[gi].semMedida ? `<div class="nuvem-sem">${fmt(docs[gi].semMedida)} OP (${pct(docs[gi].semMedida, total)}) responderam que não há medida (ex.: “nenhuma”, “não possui”) — fora da nuvem.</div>` : ''}</div>`;
       }).join('')}</div>`;
     }
     const stats = gs.map((g, gi) => ({ resp: docs[gi].length, vazios: g.regs.length - docs[gi].length }));
@@ -381,7 +437,7 @@
 
   // ------------------------------------------------------------ seção A
   function kpis(gs) {
-    const regs = gs.flatMap((g) => g.regs);
+    const regs = gs.flatMap((g) => g.todas);
     const hoje = diaChave(new Date());
     const seteDias = Date.now() - 7 * 86400000;
     const nHoje = regs.filter((r) => r._data && diaChave(r._data) === hoje).length;
@@ -395,7 +451,7 @@
     const novosHoje = nHoje ? `<span class="up">+${fmt(nHoje)} hoje</span> · ` : '';
     return [
       { rot: 'Submissões recebidas', val: fmt(regs.length), sub: `${novosHoje}+${fmt(n7)} nos últimos 7 dias` },
-      { rot: 'OP que responderam', val: fmt(ops.size), sub: temBase ? `de ${fmt(baseIds.size)} conveniadas na base DATACAR` : 'base DATACAR não carregada' },
+      { rot: 'OP que responderam', val: fmt(ops.size), sub: temBase ? `de ${fmt(baseIds.size)} conveniadas na base DATACAR` : `OP distintas (CNPJ) · ${fmt(regs.length - ops.size)} reenvio(s)` },
       temBase
         ? { rot: 'Cobertura da coleta', val: pct(cobertas.size, baseIds.size, 1), sub: `faltam ${fmt(baseIds.size - cobertas.size)} OP responder` }
         : { rot: 'Ritmo (últimos 7 dias)', val: fmt(n7 / 7, 1), small: '/dia', sub: 'média diária de submissões' },
@@ -407,7 +463,7 @@
     const temBase = D._base.length > 0;
     if (!temBase) {
       const corpo = `<div class="aviso info" style="margin:0 0 14px"><div>Para comparar <b>OP que responderam × OP que não responderam</b>, salve a lista de conveniadas do DATACAR em <code>config/base_conveniadas.csv</code> (colunas <code>edital;cnpj;nome</code>).</div></div>` +
-        legenda(gs) + barrasHtml(['subm', 'ops'], gs, gs.map((g) => new Map([['subm', { n: g.regs.length, base: D.registros.length }], ['ops', { n: new Set(g.regs.map((r) => r._op)).size, base: new Set(D.registros.map((r) => r._op)).size }]])), (c) => (c === 'subm' ? 'Submissões' : 'OP distintas'), 'do total');
+        legenda(gs) + barrasHtml(['subm', 'ops'], gs, gs.map((g) => new Map([['subm', { n: g.todas.length, base: g.todas.length }], ['ops', { n: g.regs.length, base: g.todas.length }]])), (c) => (c === 'subm' ? 'Submissões recebidas' : 'OP distintas (CNPJ) — reenvios descontados'), 'submissões');
       return cartao('cobertura', 'OP que responderam × não responderam', '', corpo, '', { semTabela: true });
     }
     const corpo = `<div class="cob">${gs.map((g) => {
@@ -447,12 +503,12 @@
     if (!datas.length) { box.innerHTML = '<div class="vazio">Nenhuma submissão ainda.</div>'; return; }
     const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     let ini = new Date(Math.min(...datas)); ini.setHours(0, 0, 0, 0);
-    const maxDias = W < 500 ? 30 : 60;
+    const maxDias = W < 500 ? 30 : W < 900 ? 60 : 120;
     if ((hoje - ini) / 86400000 > maxDias - 1) ini = new Date(hoje.getTime() - (maxDias - 1) * 86400000);
     if ((hoje - ini) / 86400000 < 13) ini = new Date(hoje.getTime() - 13 * 86400000);
     const dias = [];
     for (let d = new Date(ini); d <= hoje; d.setDate(d.getDate() + 1)) dias.push(diaChave(d));
-    const serie = gs.map((g) => { const m = new Map(); for (const r of g.regs) if (r._data) { const k = diaChave(r._data); m.set(k, (m.get(k) || 0) + 1); } return m; });
+    const serie = gs.map((g) => { const m = new Map(); for (const r of g.todas) if (r._data) { const k = diaChave(r._data); m.set(k, (m.get(k) || 0) + 1); } return m; });
     const tot = dias.map((k) => serie.reduce((a, m) => a + (m.get(k) || 0), 0));
     const maxV = Math.max(1, ...tot);
     const passo = maxV <= 4 ? 1 : Math.ceil(maxV / 4 / Math.pow(10, Math.floor(Math.log10(maxV / 4)))) * Math.pow(10, Math.floor(Math.log10(maxV / 4)));
@@ -495,7 +551,7 @@
   }
 
   function cardFeed(gs) {
-    const regs = gs.flatMap((g) => g.regs.map((r) => ({ r, g }))).sort((a, b) => (b.r._data || 0) - (a.r._data || 0)).slice(0, 25);
+    const regs = gs.flatMap((g) => g.todas.map((r) => ({ r, g }))).sort((a, b) => (b.r._data || 0) - (a.r._data || 0)).slice(0, 25);
     const corpo = regs.length
       ? `<div class="feed">${regs.map(({ r, g }) => {
         const nome = r._nomeOp || (r._base && r._base.nome) || r._idOp || r.KEY;
@@ -518,7 +574,8 @@
 
     // segmentado
     const opcoes = [['comparar', 'Comparar editais', null]].concat(D._editais.map((e) => [e.id, `${e.nome} · ${e.descricao}`, COR[e.id]]), [['todos', 'Todos', COR.todos]]);
-    $('#seg-modo').innerHTML = opcoes.map(([id, rot, cor]) => `<button data-modo="${id}" aria-pressed="${modo === id}">${cor ? `<i class="chip-cor" style="background:${cor}"></i>` : ''}${esc(rot)}</button>`).join('');
+    const me = modoEfetivo();
+    $('#seg-modo').innerHTML = opcoes.map(([id, rot, cor]) => `<button data-modo="${id}" aria-pressed="${me === id}"${D._semEdital && id !== 'todos' ? ' disabled title="Sem edital identificado: carregue a base DATACAR (config/base_conveniadas.csv)"' : ''}>${cor ? `<i class="chip-cor" style="background:${cor}"></i>` : ''}${esc(rot)}</button>`).join('');
     $('#nav').innerHTML = `<a href="#sec-progresso"><b>A</b>Progresso</a>` + cfg.secoes.map((s) => `<a href="#sec-${s.id}"><b>${esc(s.letra)}</b>${esc(s.titulo)}</a>`).join('');
 
     $('#kpis').innerHTML = kpis(gs);
@@ -543,7 +600,7 @@
     $('#conteudo').innerHTML = html;
     desenharLinhaTempo(gs);
 
-    $('#rodape').innerHTML = `Formulário <code>${esc(D.meta.formId)}</code> · ${fmt(D.registros.length)} submissões · ${D.meta.temXlsForm ? 'rótulos do XLSForm' : 'códigos brutos (sem XLSForm)'} · atualização automática a cada ${Math.round(D.meta.intervalo / 60) || 1} min`;
+    $('#rodape').innerHTML = `Formulário <code>${esc(D.meta.formId)}</code> · ${fmt(D.registros.length)} submissões · ${D.meta.temXlsForm ? 'rótulos do XLSForm' : 'códigos brutos (sem XLSForm)'} · gráficos consideram a submissão mais recente de cada OP · atualização automática a cada ${Math.round(D.meta.intervalo / 60) || 1} min`;
   }
 
   function renderAvisos(gs) {
@@ -554,7 +611,8 @@
     if (!m.demo && m.atualizadoEm && !m.temXlsForm) av.push(`<div class="aviso info">ℹ️ <div>Sem o XLSForm, as opções aparecem com o <b>código</b> salvo no SurveyCTO. Baixe a definição do formulário (Design → Download) e salve como <code>config/formulario.xlsx</code> para exibir os rótulos.</div></div>`);
     if (m.naoEncontrados && m.naoEncontrados.length) av.push(`<div class="aviso info">🔎 <div>Variáveis não encontradas nos dados: ${m.naoEncontrados.map((n) => `<code>${esc(n)}</code>`).join(' ')}</div></div>`);
     const semEdital = D.registros.filter((r) => !r._g).length;
-    if (D.registros.length && semEdital && modo !== 'todos') av.push(`<div class="aviso info">🧭 <div><b>${fmt(semEdital)}</b> submissão(ões) sem edital identificado ${m.chaves.edital ? `(campo <code>${esc(m.chaves.edital)}</code>)` : '(nenhum campo de edital detectado — defina <code>CAMPO_EDITAL</code> no .env ou inclua a coluna <code>edital</code> na base DATACAR)'}; elas aparecem apenas em “Todos”.</div></div>`);
+    if (D.registros.length && D._semEdital) av.push(`<div class="aviso info">🧭 <div><b>O formulário não tem campo de edital.</b> Para separar <b>Edital 1 (OP Dinâmicas)</b> × <b>Edital 2 (OP Ativas)</b> e calcular quem ainda não respondeu, salve a base DATACAR em <code>config/base_conveniadas.csv</code> (colunas <code>edital;cnpj;nome</code>) — o cruzamento é feito pelo CNPJ. Até lá, o painel mostra o conjunto completo.</div></div>`);
+    else if (D.registros.length && semEdital && modo !== 'todos') av.push(`<div class="aviso info">🧭 <div><b>${fmt(semEdital)}</b> submissão(ões) sem edital identificado ${m.chaves.edital ? `(campo <code>${esc(m.chaves.edital)}</code>)` : '(nenhum campo de edital detectado — defina <code>CAMPO_EDITAL</code> no .env ou inclua a coluna <code>edital</code> na base DATACAR)'}; elas aparecem apenas em “Todos”.</div></div>`);
     $('#avisos').innerHTML = av.join('');
   }
 

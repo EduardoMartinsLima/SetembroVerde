@@ -11,7 +11,16 @@
 // "auto" decide pelo XLSForm (config/formulario.xlsx), quando existir, ou
 // pelos próprios valores recebidos.
 
+const rotulos = require('./rotulos');
+
+const NOTA_ESCALA = 'A escala de faixas mudou entre versões do formulário (de 20 em 20% e de 25 em 25%); as duas aparecem.';
+
 module.exports = {
+  rotulos,
+
+  // Fuso das datas de envio retornadas pela API (o SurveyCTO usa UTC).
+  datasEmUTC: true,
+
   titulo: 'PNP · Informações Ambientais e Sociais',
   subtitulo: 'Plano de Negócios Participativo — monitoramento da coleta',
 
@@ -40,17 +49,17 @@ module.exports = {
         {
           titulo: 'Diretoria',
           variaveis: [
-            { campo: 'Presenca_de_mulheres_na_diretoria', titulo: 'Presença de mulheres na diretoria' },
-            { campo: 'Presenca_de_jovens', titulo: 'Presença de jovens na diretoria' },
-            { campo: 'Presenca_de_pretos', titulo: 'Presença de pessoas pretas na diretoria' },
+            { campo: 'Presenca_de_mulheres_na_diretoria', titulo: 'Presença de mulheres na diretoria' , nota: NOTA_ESCALA },
+            { campo: 'Presenca_de_jovens', titulo: 'Presença de jovens na diretoria' , nota: NOTA_ESCALA },
+            { campo: 'Presenca_de_pretos', titulo: 'Presença de pessoas pretas na diretoria' , nota: NOTA_ESCALA },
           ],
         },
         {
           titulo: 'Assembleias e reuniões',
           variaveis: [
-            { campo: 'Presenca_de_mulheres', titulo: 'Presença de mulheres nas assembleias' },
-            { campo: 'numero_de_jovens_ate_29', titulo: 'Jovens (até 29 anos) nas assembleias' },
-            { campo: 'presenca_pretos_reuniao', titulo: 'Presença de pessoas pretas nas reuniões' },
+            { campo: 'Presenca_de_mulheres', titulo: 'Presença de mulheres nas assembleias' , nota: NOTA_ESCALA },
+            { campo: 'numero_de_jovens_ate_29', titulo: 'Jovens (até 29 anos) nas assembleias' , nota: NOTA_ESCALA },
+            { campo: 'presenca_pretos_reuniao', titulo: 'Presença de pessoas pretas nas reuniões' , nota: NOTA_ESCALA },
           ],
         },
       ],
@@ -96,11 +105,11 @@ module.exports = {
           ],
         },
         {
-          titulo: 'Medidas de atenuação (respostas abertas)',
+          titulo: 'Medidas de atenuação',
           variaveis: [
             { campo: 'medidas_atenuacao_barulho', titulo: 'Medidas de atenuação do barulho', tipo: 'nuvem' },
-            { campo: 'medidas_atenuacao_particulas_suspensas', titulo: 'Medidas de atenuação de partículas suspensas', tipo: 'nuvem' },
-            { campo: 'medidas_atenuacao_temperatura', titulo: 'Medidas de atenuação da temperatura', tipo: 'nuvem' },
+            { campo: 'medidas_atenuacao_particulas_suspensas', titulo: 'Medidas de atenuação de partículas suspensas' },
+            { campo: 'medidas_atenuacao_temperatura', titulo: 'Medidas de atenuação da temperatura' },
           ],
         },
       ],
@@ -134,7 +143,12 @@ module.exports = {
           titulo: 'Gestão ambiental',
           variaveis: [
             { campo: 'intrumentos_gestao_ambiental', titulo: 'Instrumentos de gestão ambiental' },
-            { campo: 'intrumentos_gestao_ambiental_PGRS', titulo: 'Plano de Gerenciamento de Resíduos Sólidos (PGRS)' },
+            {
+              campo: 'intrumentos_gestao_ambiental_PGRS',
+              titulo: 'Possui Plano de Gerenciamento de Resíduos Sólidos (PGRS)?',
+              tipo: 'marcado',
+              pai: 'intrumentos_gestao_ambiental',
+            },
           ],
         },
         {

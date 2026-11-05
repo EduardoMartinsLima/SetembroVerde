@@ -24,6 +24,8 @@ const painelConfig = require('./config/painel.config');
 
 const DEMO = process.argv.includes('--demo') || process.env.DEMO === '1';
 const TESTAR = process.argv.includes('--testar');
+// --arquivo=dados.json lê as submissões de um arquivo (testes, sem consultar a API)
+const ARQUIVO = (process.argv.find((a) => a.startsWith('--arquivo=')) || '').slice(10);
 const PORTA = Number(process.env.PORTA || process.env.PORT || 3100);
 const INTERVALO = Math.max(30, Number(process.env.INTERVALO_SEGUNDOS || (DEMO ? 20 : 300)));
 
@@ -165,10 +167,21 @@ function resolverColunas(colunas) {
     nomeOp: detectar('CAMPO_NOME_OP', [/^nome_?(da_)?(op|organiza|associa|cooperativa|entidade)/i, /razao_social/i, /^(op|organizacao)$/i]),
     municipio: detectar('CAMPO_MUNICIPIO', [/^municipio/i, /munic/i]),
   };
+  // Perguntas de múltipla escolha podem vir "divididas" no formato wide:
+  // uma coluna por opção (campo_opcao = 1). Nesse caso o campo é reconstruído.
+  const valoresBinarios = (col) => estado.registros.every((r) => r[col] === undefined || r[col] === '' || r[col] === '0' || r[col] === '1');
   const variaveis = {};
+  const divididas = {};
   for (const s of painelConfig.secoes)
-    for (const g of s.grupos) for (const v of g.variaveis) variaveis[v.campo] = achar(v.campo) || null;
-  return { chaves, variaveis };
+    for (const g of s.grupos)
+      for (const v of g.variaveis) {
+        variaveis[v.campo] = achar(v.campo) || null;
+        if (variaveis[v.campo]) continue;
+        const prefixo = v.campo.toLowerCase() + '_';
+        const partes = colunas.filter((c) => c.toLowerCase().startsWith(prefixo) && valoresBinarios(c)).map((c) => ({ col: c, opcao: c.slice(prefixo.length) }));
+        if (partes.length) divididas[v.campo] = partes;
+      }
+  return { chaves, variaveis, divididas };
 }
 
 async function atualizar() {
@@ -177,7 +190,7 @@ async function atualizar() {
   estado.ultimaTentativa = new Date().toISOString();
   try {
     carregarArquivosLocais();
-    const dados = DEMO ? demo.proximo() : await baixarDados(SCTO);
+    const dados = DEMO ? demo.proximo() : ARQUIVO ? JSON.parse(fs.readFileSync(ARQUIVO, 'utf8')) : await baixarDados(SCTO);
     const colunas = [...new Set(dados.flatMap((r) => Object.keys(r)))];
     const hash = crypto.createHash('sha1').update(JSON.stringify(dados)).digest('hex');
     const novos = dados.length - estado.registros.length;
@@ -201,13 +214,17 @@ async function atualizar() {
 }
 
 function payload() {
-  const { chaves, variaveis } = resolverColunas(estado.colunas);
+  const { chaves, variaveis, divididas } = resolverColunas(estado.colunas);
   const usar = new Map([['KEY', 'KEY'], ['SubmissionDate', 'SubmissionDate']]);
   for (const [k, col] of Object.entries(chaves)) if (col) usar.set(col, '_' + k);
   for (const [nome, col] of Object.entries(variaveis)) if (col) usar.set(col, nome);
   const registros = estado.registros.map((r) => {
     const o = {};
     for (const [col, nome] of usar) if (r[col] !== undefined && r[col] !== '') o[nome] = r[col];
+    for (const [nome, partes] of Object.entries(divididas)) {
+      const marcadas = partes.filter((p) => r[p.col] === '1').map((p) => p.opcao);
+      if (marcadas.length) o[nome] = marcadas.join(' ');
+    }
     return o;
   });
   const esquema = {};
@@ -231,7 +248,8 @@ function payload() {
       erro: estado.erro,
       totalColunas: estado.colunas.length,
       chaves,
-      naoEncontrados: Object.entries(variaveis).filter(([, c]) => !c && estado.colunas.length).map(([n]) => n),
+      naoEncontrados: Object.entries(variaveis).filter(([n, c]) => !c && !divididas[n] && estado.colunas.length).map(([n]) => n),
+      reconstruidas: Object.keys(divididas),
       temXlsForm: !!estado.esquema,
     },
     config: painelConfig,
@@ -305,7 +323,7 @@ const servidor = http.createServer((req, res) => {
 // ---------------------------------------------------------------- início
 
 async function main() {
-  if (!DEMO && (!SCTO.usuario || !SCTO.senha)) {
+  if (!DEMO && !ARQUIVO && (!SCTO.usuario || !SCTO.senha)) {
     console.error('Defina SCTO_USUARIO e SCTO_SENHA no arquivo .env (veja .env.example), ou rode "npm run demo".');
     process.exit(1);
   }
@@ -314,10 +332,12 @@ async function main() {
     try {
       const dados = await baixarDados(SCTO);
       const colunas = [...new Set(dados.flatMap((r) => Object.keys(r)))];
-      const { chaves, variaveis } = resolverColunas(colunas);
+      estado.registros = dados;
+      const { chaves, variaveis, divididas } = resolverColunas(colunas);
       console.log(`\nOK — ${dados.length} submissões, ${colunas.length} colunas.`);
       console.log('Campos-chave detectados:', chaves);
-      const faltando = Object.entries(variaveis).filter(([, c]) => !c).map(([n]) => n);
+      const faltando = Object.entries(variaveis).filter(([n, c]) => !c && !divididas[n]).map(([n]) => n);
+      if (Object.keys(divididas).length) console.log('Múltipla escolha reconstruída a partir de colunas por opção:', Object.keys(divididas).join(', '));
       console.log(faltando.length ? `Variáveis prioritárias NÃO encontradas: ${faltando.join(', ')}` : 'Todas as variáveis prioritárias foram encontradas.');
       console.log(`XLSForm: ${estado.esquema ? 'carregado' : 'não encontrado (config/formulario.xlsx)'} · Base DATACAR: ${estado.base ? estado.base.length + ' OP' : 'não encontrada (config/base_conveniadas.csv)'}`);
       process.exit(0);

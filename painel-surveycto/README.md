@@ -58,6 +58,23 @@ Para conhecer o painel sem acessar o SurveyCTO: `npm run demo` (dados
 
 Os dois arquivos ficam fora do git (`.gitignore`), pois têm dados reais.
 
+## Como o painel lida com este formulário (testado com os dados reais)
+
+- **Autenticação**: o servidor `bpcomponente2` usa HTTP Basic; o cliente detecta o
+  esquema sozinho (também suporta Digest).
+- **Edital**: o formulário **não tem campo de edital**. A separação Edital 1 × Edital 2
+  vem da base DATACAR, cruzada pelo `cnpj_organizacao`. Sem a base, o painel mostra
+  o conjunto completo e os botões de edital ficam desabilitados.
+- **Reenvios**: há OP com mais de uma submissão (mesmo CNPJ). Os gráficos usam a
+  **submissão mais recente de cada OP**; os KPIs mostram submissões e OP distintas.
+- **Múltipla escolha "dividida"**: `medidas_atenuacao_particulas_suspensas`,
+  `medidas_atenuacao_temperatura`, `intrumentos_gestao_ambiental` e
+  `situacao_ordem_ambiental` chegam como uma coluna por opção (`campo_opcao = 1`);
+  o servidor as reconstrói automaticamente.
+- **Rótulos**: a API não fornece o XLSForm. Enquanto `config/formulario.xlsx` não
+  existir, os códigos são traduzidos por `config/rotulos.js` (editável).
+- **Datas de envio** vêm em UTC e são exibidas no horário local do navegador.
+
 ## Ajustes
 
 - **Variáveis, títulos e seções**: `config/painel.config.js`. Cada variável aceita
