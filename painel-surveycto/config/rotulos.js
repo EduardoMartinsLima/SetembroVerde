@@ -8,14 +8,14 @@
 // fora de uma escala são ordenadas pela frequência.
 
 const escalaPresenca = {
-  nenhum: 'Nenhuma',
-  '20_menos': 'Menos de 20%',
+  nenhum: 'Nenhum',
+  '20_menos': '20% ou menos',
   Ate_25: 'Até 25%',
-  '20_a_40': '20% a 40%',
-  '25_a_50': '25% a 50%',
-  '40_a_60': '40% a 60%',
-  '50_a_75': '50% a 75%',
-  '60_a_80': '60% a 80%',
+  '20_a_40': 'Acima de 20% e até 40%',
+  '25_a_50': 'Acima de 25% e até 50%',
+  '40_a_60': 'Acima de 40% e até 60%',
+  '50_a_75': 'Acima de 50% e até 75%',
+  '60_a_80': 'Acima de 60% e até 80%',
   acima_de_75: 'Acima de 75%',
   acima_80: 'Acima de 80%',
 };

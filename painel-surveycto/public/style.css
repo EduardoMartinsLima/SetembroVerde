@@ -256,6 +256,8 @@ button { font: inherit; color: inherit; }
 .tl .eixo line { stroke: var(--grid); }
 
 /* ---------- cobertura ---------- */
+.fora { border-top: 1px dashed var(--border); padding-top: 14px; }
+.fora .pct { font-size: 20px; }
 .cob { display: flex; flex-direction: column; gap: 18px; }
 .cob-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .cob-cab .nome { font-weight: 600; display: flex; gap: 8px; align-items: center; }

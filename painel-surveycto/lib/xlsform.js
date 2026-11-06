@@ -109,7 +109,17 @@ function toObjects(rows) {
   });
 }
 
-const stripHtml = (s) => String(s || '').replace(/<[^>]+>/g, '').replace(/\$\{[^}]+\}/g, '…').replace(/\s+/g, ' ').trim();
+// Entidades HTML usadas nos enunciados (&ccedil;, &atilde;, &nbsp; …)
+const MARCAS = { acute: '\u0301', grave: '\u0300', circ: '\u0302', tilde: '\u0303', uml: '\u0308', cedil: '\u0327' };
+const NOMEADAS = { nbsp: ' ', ordm: 'º', ordf: 'ª', deg: '°', ndash: '–', mdash: '—', hellip: '…', laquo: '«', raquo: '»', ldquo: '“', rdquo: '”', lsquo: '‘', rsquo: '’', bull: '•', middot: '·', sup2: '²', sup3: '³', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+const decodeNomeadas = (s) =>
+  s.replace(/&([a-zA-Z]+[0-9]?);/g, (m, nome) => {
+    if (NOMEADAS[nome] !== undefined) return NOMEADAS[nome];
+    const x = /^([a-zA-Z])(acute|grave|circ|tilde|uml|cedil)$/.exec(nome);
+    return x ? (x[1] + MARCAS[x[2]]).normalize('NFC') : m;
+  }).replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(+d));
+
+const stripHtml = (s) => decodeNomeadas(String(s || '').replace(/<[^>]+>/g, '')).replace(/\$\{[^}]+\}/g, '…').replace(/\s+/g, ' ').trim();
 
 function pickLabel(obj, prefer) {
   const keys = Object.keys(obj).filter((k) => k === 'label' || k.startsWith('label:'));

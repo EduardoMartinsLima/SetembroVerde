@@ -163,10 +163,17 @@
   }
   function rotuloOpcao(campo, valor) {
     const e = D.esquema[campo];
-    if (e && e.opcoes && e.opcoes[valor]) return e.opcoes[valor];
     const R = D.config.rotulos || {};
     const porCampo = (R.campos || {})[campo] || {};
-    return porCampo[valor] || (R.geral || {})[valor] || embelezar(valor);
+    const nosso = porCampo[valor] || (R.geral || {})[valor];
+    const doForm = e && e.opcoes && e.opcoes[valor];
+    if (doForm) {
+      // rótulo do XLSForm, com dois ajustes: "SIM"/"NÃO" em caixa normal, e
+      // siglas sem explicação (ex.: "SIF") usam o rótulo detalhado de rotulos.js
+      if (doForm === valor && nosso) return nosso;
+      return doForm.replace(/^(SIM|NÃO)\b/, (w) => w.charAt(0) + w.slice(1).toLowerCase());
+    }
+    return nosso || embelezar(valor);
   }
 
   // ------------------------------------------------------------ agregações
@@ -223,6 +230,10 @@
     if (tipo === 'faixa_etaria') return FAIXAS.slice();
     const e = D.esquema[campo];
     const chaves = [...total.keys()];
+    const ordemR = (D.config.rotulos && D.config.rotulos.ordem) || [];
+    // escalas que misturam versões do formulário (ex.: faixas de presença antigas)
+    if (chaves.length > 1 && chaves.every((k) => ordemR.includes(k)) && chaves.some((k) => !(e && e.opcoes && e.opcoes[k])))
+      return chaves.sort((a, b) => ordemR.indexOf(a) - ordemR.indexOf(b));
     if (e && e.opcoes) {
       const ordem = e.ordem || Object.keys(e.opcoes);
       return chaves.sort((a, b) => {
@@ -284,9 +295,10 @@
   }
 
   function cartao(id, titulo, campo, corpo, rodape, opts = {}) {
+    if (!opts.pergunta && campo && D.esquema[campo] && D.esquema[campo].rotulo && D.esquema[campo].rotulo !== titulo) opts.pergunta = D.esquema[campo].rotulo;
     const btn = opts.semTabela ? '' : `<button class="btn-mini" data-tabela="${esc(id)}" aria-pressed="${tabelas.has(id)}">${esc(opts.rotuloTabela || 'Tabela')}</button>`;
     return `<article class="card ${opts.classe || ''}" id="card-${esc(id)}">
-      <div class="card-cab"><div><h3>${esc(titulo)}</h3>${campo ? `<div class="campo">${esc(campo)}</div>` : ''}</div><div class="card-acoes">${btn}</div></div>
+      <div class="card-cab"><div><h3>${esc(titulo)}</h3>${campo ? `<div class="campo"${opts.pergunta ? ` data-tip="${esc('Pergunta do formulário\n' + opts.pergunta)}"` : ''}>${esc(campo)}${opts.pergunta ? ' ⓘ' : ''}</div>` : ''}</div><div class="card-acoes">${btn}</div></div>
       ${corpo}
       ${rodape ? `<div class="card-rod">${rodape}</div>` : ''}
     </article>`;
@@ -492,7 +504,6 @@
       const total = g.base.length;
       const resp = g.base.filter((b) => ids.has(b._id || 'n:' + b._nome));
       const pend = g.base.filter((b) => !ids.has(b._id || 'n:' + b._nome));
-      const semMatch = g.regs.filter((r) => !r._base).length;
       const busca = ui.pendBusca[g.id] || '';
       const filtro = semAcento(busca).toLowerCase();
       const lista = pend.filter((b) => !filtro || semAcento(`${b.nome} ${b.id} ${b.municipio}`).toLowerCase().includes(filtro));
@@ -502,14 +513,24 @@
           <div style="flex-grow:${resp.length};background:${g.cor}"></div><div class="falta" style="flex-grow:${pend.length}"></div>
         </div>
         <div class="cob-det"><span><b>${fmt(resp.length)}</b> responderam</span><span><b>${fmt(pend.length)}</b> não responderam · ${fmt(total)} conveniadas</span></div>
-        ${semMatch ? `<div class="cob-det" style="margin-top:4px"><span>${fmt(semMatch)} submissão(ões) sem correspondência na base DATACAR</span></div>` : ''}
         ${pend.length ? `<details class="pend" data-pend="${g.id}" ${ui.pendAberto[g.id] ? 'open' : ''}><summary>Ver OP que ainda não responderam (${fmt(pend.length)})</summary>
           <input type="search" placeholder="Buscar por nome, CNPJ ou município…" data-busca="${g.id}" value="${esc(busca)}">
           <div class="lista-pend">${lista.slice(0, 300).map((b) => `<div><span>${esc(b.nome || b.id)}</span><span class="m">${esc(b.municipio || b.id || '')}</span></div>`).join('') || '<div><span>Nenhuma OP encontrada.</span></div>'}</div>
         </details>` : ''}
       </div>`;
-    }).join('')}</div>`;
+    }).join('')}${foraDaBase()}</div>`;
     return cartao('cobertura', 'OP que responderam × não responderam', 'Comparação com a base DATACAR de conveniadas', corpo, '', { semTabela: true });
+  }
+
+  // OP que responderam, mas cujo CNPJ não está na base DATACAR (provável erro de digitação)
+  function foraDaBase() {
+    const fora = D._unicos.filter((r) => !r._base);
+    if (!fora.length) return '';
+    return `<div class="fora"><div class="cob-cab"><span class="nome"><i class="chip-cor" style="background:var(--outros)"></i>Fora da base DATACAR</span><span class="pct">${fmt(fora.length)}</span></div>
+      <div class="cob-det"><span>OP que responderam, mas o CNPJ informado não está na base — sem edital definido; confira o CNPJ digitado.</span></div>
+      <details class="pend" data-pend="fora" ${ui.pendAberto.fora ? 'open' : ''}><summary>Ver as ${fmt(fora.length)} OP</summary>
+        <div class="lista-pend">${fora.map((r) => `<div><span>${esc(r._nomeOp || r.KEY)}</span><span class="m">${esc(r._idOp || '')}</span></div>`).join('')}</div>
+      </details></div>`;
   }
 
   function cardLinhaTempo(gs) {
@@ -634,7 +655,9 @@
     if (m.naoEncontrados && m.naoEncontrados.length) av.push(`<div class="aviso info">🔎 <div>Variáveis não encontradas nos dados: ${m.naoEncontrados.map((n) => `<code>${esc(n)}</code>`).join(' ')}</div></div>`);
     const semEdital = D.registros.filter((r) => !r._g).length;
     if (D.registros.length && D._semEdital) av.push(`<div class="aviso info">🧭 <div><b>O formulário não tem campo de edital.</b> Para separar <b>Edital 1 (OP Dinâmicas)</b> × <b>Edital 2 (OP Ativas)</b> e calcular quem ainda não respondeu, salve a base DATACAR em <code>config/base_conveniadas.csv</code> (colunas <code>edital;cnpj;nome</code>) — o cruzamento é feito pelo CNPJ. Até lá, o painel mostra o conjunto completo.</div></div>`);
-    else if (D.registros.length && semEdital && modo !== 'todos') av.push(`<div class="aviso info">🧭 <div><b>${fmt(semEdital)}</b> submissão(ões) sem edital identificado ${m.chaves.edital ? `(campo <code>${esc(m.chaves.edital)}</code>)` : '(nenhum campo de edital detectado — defina <code>CAMPO_EDITAL</code> no .env ou inclua a coluna <code>edital</code> na base DATACAR)'}; elas aparecem apenas em “Todos”.</div></div>`);
+    else if (D.registros.length && semEdital && modo !== 'todos') av.push(D._base.length && !m.chaves.edital
+      ? `<div class="aviso info">🧭 <div><b>${fmt(semEdital)}</b> submissão(ões) de <b>${fmt(D._unicos.filter((r) => !r._base).length)}</b> OP têm CNPJ fora da base DATACAR, por isso ficam sem edital e aparecem apenas em “Todos”. A lista está no cartão <a href="#card-cobertura">OP que responderam × não responderam</a>.</div></div>`
+      : `<div class="aviso info">🧭 <div><b>${fmt(semEdital)}</b> submissão(ões) sem edital identificado ${m.chaves.edital ? `(campo <code>${esc(m.chaves.edital)}</code>)` : '(nenhum campo de edital detectado — defina <code>CAMPO_EDITAL</code> no .env ou inclua a coluna <code>edital</code> na base DATACAR)'}; elas aparecem apenas em “Todos”.</div></div>`);
     $('#avisos').innerHTML = av.join('');
   }
 

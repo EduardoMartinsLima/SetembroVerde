@@ -70,14 +70,14 @@ module.exports = {
       titulo: 'Ocupação',
       grupos: [
         {
-          titulo: 'Pessoas na gestão',
+          titulo: 'Pessoas que trabalham na agroindústria',
           variaveis: [
-            { campo: 'quantas_pessoas_trabalham_na_gestao', titulo: 'Pessoas que trabalham na gestão', tipo: 'numero' },
+            { campo: 'quantas_pessoas_trabalham_na_gestao', titulo: 'Pessoas que trabalham na agroindústria (todas as áreas)', tipo: 'numero' },
             {
               campo: 'quantas_sao_associadas',
               titulo: 'Dessas, quantas são associadas',
               tipo: 'numero',
-              relacao: { campo: 'quantas_pessoas_trabalham_na_gestao', rotulo: 'Associadas / pessoas na gestão' },
+              relacao: { campo: 'quantas_pessoas_trabalham_na_gestao', rotulo: 'Associadas / total de trabalhadores' },
             },
           ],
         },
